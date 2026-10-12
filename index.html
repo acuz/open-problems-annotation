@@ -45,7 +45,7 @@ header.top .spacer { flex: 1; }
 .guide li { margin-bottom: 6px; }
 kbd { font-family: var(--mono); font-size: 12px; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--bg); }
 /* main */
-.app { display: grid; grid-template-columns: 230px minmax(0, 1fr) 340px; gap: 0; min-height: calc(100vh - 56px); }
+.app { display: grid; grid-template-columns: 210px minmax(0, 1fr) 320px; gap: 0; min-height: calc(100vh - 56px); }
 .side { border-right: 1px solid var(--rule); padding: 12px; display: grid; gap: 10px; align-content: start; position: sticky; top: 56px; height: calc(100vh - 56px); overflow: auto; }
 .side input { width: 100%; border: 1px solid var(--rule); border-radius: 5px; padding: 6px 8px; background: var(--surface); }
 .side .filters { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -68,8 +68,8 @@ kbd { font-family: var(--mono); font-size: 12px; border: 1px solid var(--rule); 
 .links a { font-size: 13px; border: 1px solid var(--rule); border-radius: 4px; padding: 3px 9px; text-decoration: none; background: var(--surface); }
 .pub { font-size: 13.5px; margin-top: 4px; }
 .section-label { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 22px 0 6px; }
-.text { font-family: var(--serif); font-size: 16.5px; line-height: 1.65; max-width: 78ch; white-space: pre-wrap; overflow-wrap: anywhere; }
-.text .katex-display { overflow-x: auto; overflow-y: hidden; }
+.ptext { font-family: var(--serif); font-size: 16.5px; line-height: 1.65; max-width: 78ch; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ptext .katex-display { overflow-x: auto; overflow-y: hidden; }
 mark { background: var(--mark); color: inherit; }
 .form { border-left: 1px solid var(--rule); padding: 16px; position: sticky; top: 56px; height: calc(100vh - 56px); overflow: auto; display: grid; gap: 14px; align-content: start; background: var(--surface); }
 .form h3 { margin: 0; font-size: 14px; }
@@ -87,7 +87,11 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 .nav { display: flex; gap: 8px; }
 .saved { color: var(--muted); font-size: 12px; min-height: 1em; }
 /* text converted from the authors' LaTeX (pandoc): paragraphs, theorem-like blocks, headings, lists, displayed maths */
-.text.rich { white-space: normal; }
+.ptext.rich { white-space: normal; }
+/* abstract: narrow, centred, justified (as on a paper's first page); introduction: full width of the reading column */
+.label-abstract { text-align: center; }
+.rich.abstract { max-width: 62ch; margin: 0 auto; font-size: 15.5px; text-align: justify; hyphens: auto; }
+.rich.intro { max-width: 112ch; }
 .rich p { margin: 0 0 0.85em; }
 .rich h4 { font-family: var(--serif); font-size: 17px; margin: 1.3em 0 0.5em; }
 .rich > div, .rich div:not(.math) { margin: 0.9em 0; padding: 0.4em 0 0.1em 0.9em; border-left: 3px solid var(--rule); }
@@ -137,6 +141,14 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
     <p>Answer <b>no</b> when the paper only proves, disproves or makes progress on someone else's problem without saying what remains open; when a conjecture appears only as background; or when a “Conjecture” statement is someone else's conjecture that the paper then proves. Use <b>unsure</b> freely.</p>
     <h3>Second question: does the paper solve a known problem?</h3>
     <p>Independently of question 1, say whether the paper <b>resolves</b> (proves or disproves) a conjecture or problem posed earlier, makes <b>partial progress</b> on one (a special case, a better bound, a weaker form), or neither. A paper that only proves someone else's conjecture is “No” to question 1 and “Resolves it” to question 2; a paper can be “Yes” to both.</p>
+    <p><b>Answer from what the authors claim.</b> We want to know whether the paper <i>says</i> that it proves, disproves or makes progress on a known problem (“we prove the conjecture of…”, “this resolves a question of…”). You do not need to check the proof or judge whether it is correct.</p>
+    <h3>A worked example: paper P001</h3>
+    <p><i>Powers of planar graphs, product structure, and blocking partitions</i> (Distel, Hickingbotham, Seweryn, Wood, 2023).</p>
+    <ul class="guide">
+      <li><b>Question 2: Resolves it.</b> The abstract says “This resolves an open problem of Ossona de Mendez” and “This resolves an open problem of Dujmović, Morin and Wood”; the introduction states both as Questions and says “We resolve this question”. In 2a you could write “Ossona de Mendez’s question on k-powers of planar graphs; Dujmović–Morin–Wood question on k-planar graphs”.</li>
+      <li><b>Question 1: Yes.</b> The paper states no conjecture of its own in the introduction, but the introduction announces that the final section “introduces some natural open problems that arise from this work”. Announcing open problems that the paper presents counts as <b>listing open problems</b> (1a), seen in the <b>introduction</b> (1b).</li>
+      <li>So this paper is “Yes” to both questions. A paper that resolved the two problems and said nothing about what remains open would be “No” to question 1.</li>
+    </ul>
     <p>Keyboard: <kbd>Y</kbd> yes, <kbd>N</kbd> no, <kbd>U</kbd> unsure, <kbd>→</kbd> or <kbd>J</kbd> next, <kbd>←</kbd> or <kbd>K</kbd> previous (not while typing). Use your browser's <kbd>Ctrl</kbd>+<kbd>F</kbd> to search the text; the box in the sidebar finds papers that contain a word.</p>
   </div>
   <div class="card">
@@ -199,6 +211,7 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
     </div>
     <div class="q">
       <span class="qt">2. Does the paper prove, disprove or make progress on a conjecture or problem posed before (by others or by the same authors)?</span>
+      <span class="hint">Answer from what the authors claim; you do not need to check the proof.</span>
       <div class="choice" id="q7">
         <button type="button" class="yes" data-v="full">Resolves it</button>
         <button type="button" class="plain" data-v="partial">Partial progress</button>
@@ -436,15 +449,15 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   }
   function isDone(a) { return !!(a && a.poses && a.solves); }
   const CHOICES = [["q1", "poses"], ["q7", "solves"], ["q3", "where"], ["q5", "confidence"]];
-  function htmlBlock(label, html) {
+  function htmlBlock(label, html, kind) {
     // html was converted from the authors' LaTeX and sanitised (allow-list of tags) when papers.json was built (4.1)
-    const l = document.createElement("div"); l.className = "section-label"; l.textContent = label;
-    const d = document.createElement("div"); d.className = "text rich"; d.innerHTML = html || "<p>(not available)</p>";
+    const l = document.createElement("div"); l.className = "section-label label-" + kind; l.textContent = label;
+    const d = document.createElement("div"); d.className = "ptext rich " + kind; d.innerHTML = html || "<p>(not available)</p>";
     return [l, d];
   }
   function textBlock(label, content) {
     const l = document.createElement("div"); l.className = "section-label"; l.textContent = label;
-    const d = document.createElement("div"); d.className = "text"; d.textContent = content || "(not available)";
+    const d = document.createElement("div"); d.className = "ptext"; d.textContent = content || "(not available)";
     return [l, d];
   }
   function renderPaper() {
@@ -463,7 +476,7 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
     if (p.published) pub.textContent = `Published in ${p.published.journal}${p.published.volume ? " " + p.published.volume : ""}${p.published.year ? " (" + p.published.year + ")" : ""}${p.published.doi ? " · DOI " + p.published.doi : ""}`;
     else if (p.journal_ref) pub.textContent = `Journal reference (from arXiv): ${p.journal_ref}`;
     else pub.textContent = "No peer-reviewed publication found (arXiv preprint).";
-    R.append(id, h, meta, links, pub, ...htmlBlock("Abstract", p.abstract_html), ...htmlBlock("Introduction", p.introduction_html));
+    R.append(id, h, meta, links, pub, ...htmlBlock("Abstract", p.abstract_html, "abstract"), ...htmlBlock("Introduction", p.introduction_html, "intro"));
     if (window.renderMathInElement) renderMathInElement(R, { delimiters: [{ left: "\\[", right: "\\]", display: true }, { left: "\\(", right: "\\)", display: false }, { left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }],
       throwOnError: false, strict: "ignore", trust: false, macros: KATEX_MACROS });
     highlight(R); R.scrollTop = 0; window.scrollTo(0, 0);
