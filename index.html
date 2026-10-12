@@ -51,7 +51,9 @@ kbd { font-family: var(--mono); font-size: 12px; border: 1px solid var(--rule); 
 .side .filters { display: flex; gap: 4px; flex-wrap: wrap; }
 .side .filters button { font-size: 12px; padding: 3px 7px; }
 .side .filters button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
-.list { display: grid; gap: 2px; }
+.list { display: grid; gap: 2px; min-width: 0; overflow-x: hidden; }
+.list button { min-width: 0; }
+.list .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .list button { text-align: left; border: 0; background: transparent; padding: 5px 6px; border-radius: 4px; cursor: pointer; display: flex; gap: 8px; align-items: baseline; font-size: 13px; }
 .list button:hover { background: var(--surface); }
 .list button[aria-current="true"] { background: var(--surface); outline: 1px solid var(--accent); }
@@ -84,6 +86,8 @@ mark { background: var(--mark); color: inherit; }
 textarea { width: 100%; min-height: 64px; resize: vertical; }
 .nav { display: flex; gap: 8px; }
 .saved { color: var(--muted); font-size: 12px; min-height: 1em; }
+#receiptBody th, #receiptBody td { padding: 2px 14px 2px 0; text-align: left; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#receiptBody th { color: var(--muted); font-weight: 500; }
 dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); color: var(--ink); max-width: 560px; }
 @media (max-width: 1100px) { .app { grid-template-columns: 200px minmax(0, 1fr); } .form { grid-column: 1 / -1; position: static; height: auto; border-left: 0; border-top: 1px solid var(--rule); } }
 @media (max-width: 720px) { .app { grid-template-columns: 1fr; } .side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--rule); max-height: 40vh; } .read { padding-inline: 16px; } }
@@ -98,6 +102,7 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   <span class="who" id="count">0 / 0 classified</span>
   <div class="progress" aria-hidden="true"><i id="bar"></i></div>
   <button class="btn" id="guideBtn" type="button">Guide</button>
+  <button class="btn" id="receiptBtn" type="button">My receipt</button>
   <button class="btn" id="exportBtn" type="button">Download a copy</button>
 </header>
 
@@ -125,6 +130,8 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
     <div class="field"><label for="field">Main research area</label><input id="field" placeholder="e.g. combinatorics, analytic number theory"></div>
     <div class="field"><label for="career">Career stage</label>
       <select id="career"><option value="">—</option><option>PhD student</option><option>Postdoc</option><option>Faculty / permanent researcher</option><option>Other</option></select></div>
+    <div class="field"><label for="email">E-mail for your receipt (institutional address preferred; optional)</label><input id="email" type="email" autocomplete="email" placeholder="name@university.edu"></div>
+    <div class="field"><label for="invite">Invitation code (if your invitation has one; optional)</label><input id="invite" autocomplete="off" spellcheck="false"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn primary" id="startBtn" type="button">Start classifying</button>
       <label class="btn" for="importFile" style="display:inline-block">Import saved answers</label>
@@ -198,6 +205,18 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
 
 <dialog id="guideDlg"><div id="guideCopy"></div><p><button class="btn" id="closeGuide" type="button">Close</button></p></dialog>
 
+<dialog id="receiptDlg">
+  <h3 style="margin-top:0">Your receipt</h3>
+  <p class="hint">Every answer you send is stored as a row of an append-only log and gets a fingerprint (SHA-256) that is chained to all earlier rows, and the log is time-stamped daily with independent services. When the data are published you can check that your rows appear unchanged. Keep this receipt (download it, or have it e-mailed to you).</p>
+  <div id="receiptBody" style="max-height:45vh;overflow:auto"></div>
+  <p class="saved" id="receiptMsg"></p>
+  <p style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn" id="receiptDownload" type="button">Download receipt</button>
+    <button class="btn" id="receiptEmail" type="button">E-mail me my receipt</button>
+    <button class="btn" id="closeReceipt" type="button">Close</button>
+  </p>
+</dialog>
+
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 <script>
@@ -206,11 +225,11 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   // Central storage: URL of the Google Apps Script web app (apps_script.gs) that appends answers to the team's sheet.
   // Empty = answers stay in this browser only and are returned with "Download a copy".
   const ENDPOINT = "https://script.google.com/macros/s/AKfycbyi_eLVEGkEj20HdeBxw7y7RzppM0WgXQHsRQ1FS8thU-VQRqrqWUgAR7fHhpZ2DyAK/exec";
-  const PAGE_VERSION = "2026-10-12";
+  const PAGE_VERSION = "2026-10-12b";
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
   const store = { get() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } },
                   set(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); return true; } catch (e) { return false; } } };
-  let state = Object.assign({ expert: {}, answers: {}, current: 0, pending: [] }, store.get());
+  let state = Object.assign({ expert: {}, answers: {}, current: 0, pending: [], receipts: {}, head: null, emailed: false }, store.get());
   if (!state.annotator_id) state.annotator_id = uid();
   const papers = await (await fetch("papers.json")).json();
   const $ = id => document.getElementById(id);
@@ -218,22 +237,27 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   const lc = s => (s || "").toLowerCase();
 
   $("storageNote").innerHTML = ENDPOINT
-    ? "Your answers are sent to the research team as you go (to a Google Sheet held by the team, together with the name, area and career stage you enter below) and are also kept in this browser. Nothing needs to be emailed. You can stop and come back later; on another computer, press <b>Download a copy</b> here and use <b>Import</b> there."
+    ? "Your answers are sent to the research team as you go and are also kept in this browser; nothing needs to be e-mailed. They are stored in an append-only log held by the team: each answer gets a fingerprint chained to all earlier ones, and the log is time-stamped daily with independent services, so later changes would be detectable. Your name and e-mail are kept separately and are not published; your research area and career stage are. Press <b>My receipt</b> at any time to download or e-mail yourself the fingerprints of your answers. You can stop and come back later; on another computer, press <b>Download a copy</b> here and use <b>Import</b> there."
     : $("storageNote").innerHTML + " When you finish, press <b>Download a copy</b> and send the file to the research team.";
 
   // start screen
-  ["name", "field", "career"].forEach(k => { $(k).value = state.expert[k] || ""; });
+  const FIELDS = ["name", "field", "career", "email", "invite"];
+  FIELDS.forEach(k => { $(k).value = state.expert[k] || ""; });
+  try { const inv = new URLSearchParams(location.search).get("invite"); if (inv && !$("invite").value) $("invite").value = inv.slice(0, 64); } catch (e) {}
   if (Object.keys(state.answers).length) $("startMsg").textContent = `${Object.keys(state.answers).length} answers saved in this browser; you can continue where you left off.`;
   $("startBtn").onclick = () => {
-    state.expert = { name: $("name").value.trim(), field: $("field").value.trim(), career: $("career").value };
+    state.expert = { name: $("name").value.trim(), field: $("field").value.trim(), career: $("career").value,
+                     email: $("email").value.trim(), invite: $("invite").value.trim() };
     if (!state.expert.name) { $("startMsg").textContent = "Please enter a name or initials, so we can tell answer files apart."; $("name").focus(); return; }
+    if (state.expert.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(state.expert.email)) { $("startMsg").textContent = "That e-mail address does not look complete; correct it or leave the field empty."; $("email").focus(); return; }
     save(); $("start").classList.add("hidden"); $("app").classList.remove("hidden"); render();
   };
   $("importFile").onchange = e => {
     const f = e.target.files[0]; if (!f) return;
     const r = new FileReader();
     r.onload = () => { try { const d = JSON.parse(r.result); state.expert = d.expert || state.expert; if (d.annotator_id) state.annotator_id = d.annotator_id; state.answers = Object.assign({}, state.answers, d.answers || {});
-      ["name", "field", "career"].forEach(k => { $(k).value = state.expert[k] || ""; }); Object.keys(d.answers || {}).forEach(queue); save();
+      state.receipts = Object.assign({}, state.receipts, d.receipts || {});
+      FIELDS.forEach(k => { $(k).value = state.expert[k] || ""; }); Object.keys(d.answers || {}).forEach(queue); save();
       $("startMsg").textContent = `Imported ${Object.keys(d.answers || {}).length} answers.`; } catch (err) { $("startMsg").textContent = "That file could not be read. Use a file downloaded from this page (.json)."; } };
     r.readAsText(f);
   };
@@ -255,6 +279,8 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
         body: JSON.stringify({ annotator_id: state.annotator_id, expert: state.expert, page_version: PAGE_VERSION, records }) });
       const d = await r.json();
       if (!d.ok) throw new Error(d.error || "rejected");
+      (d.receipts || []).forEach(x => { (state.receipts[x.pid] = state.receipts[x.pid] || []).push({ seq: x.seq, row_hash: x.row_hash, received: x.received, updated: x.updated }); });
+      if (d.head) state.head = d.head;
       state.pending = state.pending.filter(pid => !batch.includes(pid) || state.answers[pid]?.updated > (records.find(x => x.pid === pid) || {}).updated);
       syncMsg = state.pending.length ? " · sending…" : " · sent to the research team";
     } catch (err) { syncMsg = " · not sent yet (will retry; your answers are safe here)"; }
@@ -262,6 +288,44 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
     if (state.pending.length) setTimeout(sync, syncMsg.includes("retry") ? 30000 : 500);
   }
   window.addEventListener("online", sync);
+
+  // receipts: fingerprints (seq, row_hash) returned by the log for every stored answer
+  function receiptData() {
+    return { annotator_id: state.annotator_id, issued: new Date().toISOString(), log_head_seen: state.head,
+             rows: Object.keys(state.receipts).sort().flatMap(pid => state.receipts[pid].map(x => Object.assign({ pid }, x))) };
+  }
+  function renderReceipt() {
+    const R = receiptData(), B = $("receiptBody"); B.innerHTML = "";
+    if (!R.rows.length) { B.textContent = ENDPOINT ? "No answer has been recorded in the log yet." : "This copy of the page does not send answers, so there is no receipt."; }
+    else {
+      const t = document.createElement("table"); t.style.cssText = "border-collapse:collapse;font-size:12.5px;font-family:var(--mono)";
+      t.innerHTML = "<tr><th>paper</th><th>row</th><th>received (UTC)</th><th>fingerprint</th></tr>";
+      R.rows.forEach(x => { const tr = document.createElement("tr");
+        [x.pid, x.seq, (x.received || "").replace("T", " ").slice(0, 19), x.row_hash.slice(0, 16) + "…"].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+        t.appendChild(tr); });
+      B.appendChild(t);
+    }
+    $("receiptMsg").textContent = `Annotator id ${state.annotator_id}` + (state.head ? ` · log head when last sent: row ${state.head.seq}` : "");
+    $("receiptEmail").disabled = !ENDPOINT || !state.expert.email || !R.rows.length;
+    $("receiptEmail").title = state.expert.email ? `Sends the receipt to ${state.expert.email}` : "Enter an e-mail address on the start screen to use this";
+  }
+  async function emailReceipt(auto) {
+    if (!ENDPOINT || !state.expert.email) return;
+    try {
+      const r = await fetch(ENDPOINT, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "receipt", annotator_id: state.annotator_id }) });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error || "not sent");
+      state.emailed = true; save();
+      $("receiptMsg").textContent = `Receipt e-mailed to ${state.expert.email} (${d.rows} rows).`;
+      if (auto) $("saved").textContent = `Thank you — all your answers are recorded, and a receipt has been e-mailed to ${state.expert.email}.`;
+    } catch (err) { $("receiptMsg").textContent = "The receipt could not be e-mailed (" + err.message + "). Download it instead."; }
+  }
+  $("receiptBtn").onclick = () => { renderReceipt(); $("receiptDlg").showModal(); };
+  $("closeReceipt").onclick = () => $("receiptDlg").close();
+  $("receiptEmail").onclick = () => emailReceipt(false);
+  $("receiptDownload").onclick = () => download(`receipt_${state.annotator_id.slice(0, 8)}_${new Date().toISOString().slice(0, 10)}.json`,
+                                               JSON.stringify(receiptData(), null, 1), "application/json");
   function updateCount() {
     const n = papers.filter(p => state.answers[p.pid] && state.answers[p.pid].poses).length;
     $("count").textContent = `${n} / ${papers.length} classified`; $("bar").style.width = (100 * n / papers.length) + "%";
@@ -334,7 +398,13 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   $("q4").oninput = () => setAns("statement", $("q4").value); $("q6").oninput = () => setAns("comment", $("q6").value);
   function go(d) { const n = state.current + d; if (n < 0) return; if (n >= papers.length) { $("guideDlg").close?.(); alertDone(); return; } state.current = n; save(); render(); }
   function alertDone() { $("saved").textContent = ENDPOINT ? "That was the last paper. Thank you — your answers have been sent to the research team." + (state.pending.length ? " A few are still being sent: keep this page open for a minute." : "")
-                                                        : "That was the last paper. Thank you — please press Download a copy and send the file to the research team."; }
+                                                        : "That was the last paper. Thank you — please press Download a copy and send the file to the research team.";
+    // e-mail the receipt once at the end (after pending answers are stored), if an address was given
+    if (ENDPOINT && state.expert.email && !state.emailed) {
+      const wait = () => (state.pending.length || sending) ? setTimeout(wait, 2000) : emailReceipt(true);
+      sync(); setTimeout(wait, 2000);
+    }
+  }
   $("prev").onclick = () => go(-1); $("next").onclick = () => go(1);
   document.addEventListener("keydown", e => {
     if ($("app").classList.contains("hidden") || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -347,7 +417,7 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   function download(name, text, type) { const url = URL.createObjectURL(new Blob([text], { type })); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
   $("exportBtn").onclick = () => {
     const tag = (state.expert.name || "expert").replace(/[^A-Za-z0-9]+/g, "_"); const stamp = new Date().toISOString().slice(0, 10);
-    download(`open_problems_${tag}_${stamp}.json`, JSON.stringify({ expert: state.expert, annotator_id: state.annotator_id, exported: new Date().toISOString(), answers: state.answers }, null, 1), "application/json");
+    download(`open_problems_${tag}_${stamp}.json`, JSON.stringify({ expert: state.expert, annotator_id: state.annotator_id, exported: new Date().toISOString(), answers: state.answers, receipts: state.receipts }, null, 1), "application/json");
     const cols = ["pid", "arxiv_id", "poses", "how", "where", "statement", "confidence", "comment", "updated"];
     const esc = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const rows = papers.filter(p => state.answers[p.pid]).map(p => { const a = state.answers[p.pid]; return [p.pid, p.arxiv_id, a.poses, (a.how || []).join(";"), a.where, a.statement, a.confidence, a.comment, a.updated].map(esc).join(","); });
