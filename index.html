@@ -45,8 +45,14 @@ header.top .spacer { flex: 1; }
 .guide li { margin-bottom: 6px; }
 kbd { font-family: var(--mono); font-size: 12px; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--bg); }
 /* main */
-.app { display: grid; grid-template-columns: 210px minmax(0, 1fr) 320px; gap: 0; min-height: calc(100vh - 56px); }
-.side { border-right: 1px solid var(--rule); padding: 12px; display: grid; gap: 10px; align-content: start; position: sticky; top: 56px; height: calc(100vh - 56px); overflow: auto; }
+.app { display: grid; grid-template-columns: var(--side-w, 260px) 7px minmax(0, 1fr) 7px var(--form-w, 380px); gap: 0; min-height: calc(100vh - 56px); }
+/* drag handles between the columns (widths remembered in this browser; double-click resets) */
+.resizer { position: sticky; top: 56px; height: calc(100vh - 56px); cursor: col-resize; touch-action: none; display: flex; justify-content: center; }
+.resizer::after { content: ""; width: 1px; height: 100%; background: var(--rule); transition: background .15s, width .15s; }
+.resizer:hover::after, .resizer:focus-visible::after, .resizer.dragging::after { width: 3px; background: var(--accent); }
+.resizer:focus-visible { outline: none; }
+body.resizing { cursor: col-resize; user-select: none; }
+.side { padding: 12px; display: grid; gap: 10px; align-content: start; position: sticky; top: 56px; height: calc(100vh - 56px); overflow: auto; }
 .side input { width: 100%; border: 1px solid var(--rule); border-radius: 5px; padding: 6px 8px; background: var(--surface); }
 .side .filters { display: flex; gap: 4px; flex-wrap: wrap; }
 .side .filters button { font-size: 12px; padding: 3px 7px; }
@@ -71,7 +77,7 @@ kbd { font-family: var(--mono); font-size: 12px; border: 1px solid var(--rule); 
 .ptext { font-family: var(--serif); font-size: 16.5px; line-height: 1.65; max-width: 78ch; white-space: pre-wrap; overflow-wrap: anywhere; }
 .ptext .katex-display { overflow-x: auto; overflow-y: hidden; }
 mark { background: var(--mark); color: inherit; }
-.form { border-left: 1px solid var(--rule); padding: 16px; position: sticky; top: 56px; height: calc(100vh - 56px); overflow: auto; display: grid; gap: 14px; align-content: start; background: var(--surface); }
+.form { padding: 16px; position: sticky; top: 56px; height: calc(100vh - 56px); overflow: auto; display: grid; gap: 14px; align-content: start; background: var(--surface); }
 .form h3 { margin: 0; font-size: 14px; }
 .q { display: grid; gap: 6px; }
 .q .qt { font-weight: 600; font-size: 14px; }
@@ -93,6 +99,10 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
    the abstract is indented on both sides within it */
 .read > * { max-width: 92ch; margin-left: auto; margin-right: auto; }
 .label-abstract { text-align: center; }
+/* paper header centred, like a title page: label, title, authors, licence, links, publication */
+.label-head, .read h2, .read .meta, .read .pub { text-align: center; }
+.read .meta { justify-items: center; }
+.read .links { justify-content: center; }
 .read > .rich.abstract { max-width: 78ch; font-size: 15.5px; text-align: justify; hyphens: auto; }
 .read > .rich.intro { max-width: 92ch; text-align: justify; hyphens: auto; }
 .rich p { margin: 0 0 0.85em; }
@@ -109,7 +119,7 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 #receiptBody th, #receiptBody td { padding: 2px 14px 2px 0; text-align: left; white-space: nowrap; font-variant-numeric: tabular-nums; }
 #receiptBody th { color: var(--muted); font-weight: 500; }
 dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); color: var(--ink); max-width: 560px; }
-@media (max-width: 1100px) { .app { grid-template-columns: 200px minmax(0, 1fr); } .form { grid-column: 1 / -1; position: static; height: auto; border-left: 0; border-top: 1px solid var(--rule); } }
+@media (max-width: 1100px) { .app { grid-template-columns: 200px minmax(0, 1fr); } .resizer { display: none; } .side { border-right: 1px solid var(--rule); } .form { grid-column: 1 / -1; position: static; height: auto; border-left: 0; border-top: 1px solid var(--rule); } }
 @media (max-width: 720px) { .app { grid-template-columns: 1fr; } .side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--rule); max-height: 40vh; } .read { padding-inline: 16px; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
@@ -181,7 +191,9 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
     </div>
     <div class="list" id="list"></div>
   </nav>
+  <div class="resizer" data-r="side" role="separator" aria-orientation="vertical" aria-label="Resize the list of papers (drag, or arrow keys; double-click to reset)" tabindex="0"></div>
   <article class="read" id="read" aria-live="polite"></article>
+  <div class="resizer" data-r="form" role="separator" aria-orientation="vertical" aria-label="Resize the questions panel (drag, or arrow keys; double-click to reset)" tabindex="0"></div>
   <aside class="form" aria-label="Classification">
     <h3 id="formTitle">Classification</h3>
     <div class="q">
@@ -284,6 +296,41 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   const $ = id => document.getElementById(id);
   let filter = "all", query = "";
   const lc = s => (s || "").toLowerCase();
+
+  // column widths: drag handles between the columns (or arrow keys on a focused handle; double-click resets);
+  // remembered in this browser only
+  const LAYOUT_KEY = "open-problems-annotation-layout", DEF_W = { side: 260, form: 380 }, LIM_W = { side: [170, 520], form: [280, 640] };
+  const widths = Object.assign({}, DEF_W);
+  try { Object.assign(widths, JSON.parse(localStorage.getItem(LAYOUT_KEY)) || {}); } catch (e) {}
+  function applyWidths(keep) {
+    const total = $("app").getBoundingClientRect().width || innerWidth;
+    for (const k of ["side", "form"]) widths[k] = Math.round(Math.min(LIM_W[k][1], Math.max(LIM_W[k][0], widths[k])));
+    const over = widths.side + widths.form + 14 + 440 - total;  // keep at least ~440px for the paper
+    if (over > 0) widths.form = Math.max(LIM_W.form[0], widths.form - over);
+    document.documentElement.style.setProperty("--side-w", widths.side + "px");
+    document.documentElement.style.setProperty("--form-w", widths.form + "px");
+    if (keep) { try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(widths)); } catch (e) {} }
+  }
+  document.querySelectorAll(".resizer").forEach(h => {
+    const k = h.dataset.r;
+    h.addEventListener("pointerdown", e => {
+      e.preventDefault(); h.setPointerCapture(e.pointerId); h.classList.add("dragging"); document.body.classList.add("resizing");
+      const box = $("app").getBoundingClientRect();
+      const move = ev => { widths[k] = k === "side" ? ev.clientX - box.left : box.right - ev.clientX; applyWidths(false); };
+      const up = () => { ["pointermove", "pointerup", "pointercancel"].forEach((t, i) => h.removeEventListener(t, i ? up : move));
+                         h.classList.remove("dragging"); document.body.classList.remove("resizing"); applyWidths(true); };
+      h.addEventListener("pointermove", move); h.addEventListener("pointerup", up); h.addEventListener("pointercancel", up);
+    });
+    h.addEventListener("dblclick", () => { widths[k] = DEF_W[k]; applyWidths(true); });
+    h.addEventListener("keydown", e => {
+      const d = e.key === "ArrowLeft" ? -16 : e.key === "ArrowRight" ? 16 : 0;
+      if (!d) return;
+      e.preventDefault(); e.stopPropagation();  // arrows on a handle resize instead of changing paper
+      widths[k] += k === "side" ? d : -d; applyWidths(true);
+    });
+  });
+  window.addEventListener("resize", () => applyWidths(false));
+  applyWidths(false);
 
   $("storageNote").innerHTML = ENDPOINT
     ? "Your answers are sent to the research team as you go and are also kept in this browser; nothing needs to be e-mailed. They are stored in an append-only log held by the team: each answer gets a fingerprint chained to all earlier ones, and your browser time-stamps each fingerprint with independent public services, so later changes or removals would be detectable. Your name and e-mail are kept separately and are not published; your research area and career stage are. Press <b>My receipt</b> at any time to download or e-mail yourself the fingerprints of your answers. You can stop and come back later; on another computer, press <b>Download a copy</b> here and use <b>Import</b> there."
@@ -441,6 +488,8 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
       b.append(dot, id, t); b.title = p.title; if (i === state.current) b.setAttribute("aria-current", "true");
       b.onclick = () => { state.current = i; save(); render(); }; L.appendChild(b);
     });
+    // maths in titles ($...$)
+    if (window.renderMathInElement) renderMathInElement(L, { delimiters: [{ left: "$", right: "$", display: false }], throwOnError: false, strict: "ignore", macros: KATEX_MACROS });
   }
   function highlight(el) {
     if (!query) return;
@@ -465,7 +514,7 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   }
   function renderPaper() {
     const p = papers[state.current]; const R = $("read"); R.innerHTML = "";
-    const id = document.createElement("div"); id.className = "section-label"; id.textContent = `${p.pid} · ${p.category} · ${p.month}`;
+    const id = document.createElement("div"); id.className = "section-label label-head"; id.textContent = `${p.pid} · ${p.category} · ${p.month}`;
     const h = document.createElement("h2"); h.textContent = p.title;
     const meta = document.createElement("div"); meta.className = "meta";
     const au = document.createElement("div"); au.textContent = p.authors.join(", ");
