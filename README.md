@@ -25,9 +25,11 @@ detectable by others:
 2. **Receipts held by the experts.** Every send returns the rows' numbers and hashes; the page keeps them ("My
    receipt": view, download) and, if the expert gave an e-mail address (institutional preferred), sends a receipt
    e-mail at the end or on request. Experts can check their rows against the published log.
-3. **Independent time-stamps.** Once a day the latest hash is time-stamped with three OpenTimestamps calendars
-   (free, anchored in Bitcoin). A later rewrite of the log cannot be back-dated. Anyone can also read the current
-   head at any time: a plain GET of the web app URL returns `{"head": {"seq", "hash"}}`.
+3. **Independent time-stamps.** The expert's own browser time-stamps every receipt hash with three OpenTimestamps
+   calendars (free, anchored in Bitcoin) as soon as the log returns it, without going through the research team's
+   server; the proofs are kept in the receipt. A row removed or altered later — even with the whole chain recomputed —
+   is then provably missing (it existed at the stamped time). In addition the server time-stamps the log head once a
+   day, and anyone can read the current head: a plain GET of the web app URL returns `{"head": {"seq", "hash"}}`.
 4. **Privacy.** Names and e-mails are kept in a separate private sheet ("identities") and enter the log only as a
    salted commitment; research area, career stage and the answers are in the log, which is meant to be published.
 5. **Invitation codes (optional).** `python analysis/scripts/4.3_verify_expert_log.py --make-invites N` creates codes

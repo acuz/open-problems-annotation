@@ -232,7 +232,7 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
 
 <dialog id="receiptDlg">
   <h3 style="margin-top:0">Your receipt</h3>
-  <p class="hint">Every answer you send is stored as a row of an append-only log and gets a fingerprint (SHA-256) that is chained to all earlier rows, and the log is time-stamped daily with independent services. When the data are published you can check that your rows appear unchanged. Keep this receipt (download it, or have it e-mailed to you).</p>
+  <p class="hint">Every answer you send is stored as a row of an append-only log and gets a fingerprint (SHA-256) chained to all earlier rows. Your browser also time-stamps each fingerprint itself with independent public services (OpenTimestamps, anchored in Bitcoin), without going through the research team. When the data are published you can check that your rows appear unchanged, and the time-stamps prove they existed even if a row were removed. Keep this receipt: download it, or have it e-mailed to you.</p>
   <div id="receiptBody" style="max-height:45vh;overflow:auto"></div>
   <p class="saved" id="receiptMsg"></p>
   <p style="display:flex;gap:8px;flex-wrap:wrap">
@@ -266,7 +266,7 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   const lc = s => (s || "").toLowerCase();
 
   $("storageNote").innerHTML = ENDPOINT
-    ? "Your answers are sent to the research team as you go and are also kept in this browser; nothing needs to be e-mailed. They are stored in an append-only log held by the team: each answer gets a fingerprint chained to all earlier ones, and the log is time-stamped daily with independent services, so later changes would be detectable. Your name and e-mail are kept separately and are not published; your research area and career stage are. Press <b>My receipt</b> at any time to download or e-mail yourself the fingerprints of your answers. You can stop and come back later; on another computer, press <b>Download a copy</b> here and use <b>Import</b> there."
+    ? "Your answers are sent to the research team as you go and are also kept in this browser; nothing needs to be e-mailed. They are stored in an append-only log held by the team: each answer gets a fingerprint chained to all earlier ones, and your browser time-stamps each fingerprint with independent public services, so later changes or removals would be detectable. Your name and e-mail are kept separately and are not published; your research area and career stage are. Press <b>My receipt</b> at any time to download or e-mail yourself the fingerprints of your answers. You can stop and come back later; on another computer, press <b>Download a copy</b> here and use <b>Import</b> there."
     : $("storageNote").innerHTML + " When you finish, press <b>Download a copy</b> and send the file to the research team.";
 
   // start screen
@@ -314,9 +314,36 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
       syncMsg = state.pending.length ? " · sending…" : " · sent to the research team";
     } catch (err) { syncMsg = " · not sent yet (will retry; your answers are safe here)"; }
     sending = false; save();
+    stampReceipts();
     if (state.pending.length) setTimeout(sync, syncMsg.includes("retry") ? 30000 : 500);
   }
-  window.addEventListener("online", sync);
+  window.addEventListener("online", () => { sync(); stampReceipts(); });
+
+  // Independent time-stamps, made by this browser and not by the research team's server: each receipt fingerprint is
+  // submitted to public OpenTimestamps calendars (anchored in Bitcoin). The stamped "file" is the 64-character row_hash
+  // as text (same convention as the log's daily anchors); the calendars' replies are kept in the receipt, so a row that
+  // later disappeared from the log can be shown to have existed at that time (analysis/scripts/4.3 checks the proofs).
+  const CALENDARS = ["https://alice.btc.calendar.opentimestamps.org", "https://bob.btc.calendar.opentimestamps.org",
+                     "https://finney.calendar.eternitywall.com"];
+  let stamping = false;
+  async function stampReceipts() {
+    if (stamping) return; stamping = true;
+    const b64 = buf => { let s = ""; new Uint8Array(buf).forEach(b => { s += String.fromCharCode(b); }); return btoa(s); };
+    try {
+      for (const pid of Object.keys(state.receipts)) for (const x of state.receipts[pid]) {
+        if ((x.ots && Object.keys(x.ots).length) || (x.ots_tries || 0) >= 5) continue;
+        const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(x.row_hash)));
+        const ots = {};
+        for (const cal of CALENDARS) {
+          try { const r = await fetch(cal + "/digest", { method: "POST", body: digest, headers: { Accept: "application/vnd.opentimestamps.v1" } });
+                if (r.ok) ots[cal] = b64(await r.arrayBuffer()); } catch (e) { /* calendar unreachable: try the others */ }
+        }
+        x.ots_tries = (x.ots_tries || 0) + 1;
+        if (Object.keys(ots).length) { x.ots = ots; x.ots_time = new Date().toISOString(); }
+        save();
+      }
+    } finally { stamping = false; }
+  }
 
   // receipts: fingerprints (seq, row_hash) returned by the log for every stored answer
   function receiptData() {
@@ -328,9 +355,10 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
     if (!R.rows.length) { B.textContent = ENDPOINT ? "No answer has been recorded in the log yet." : "This copy of the page does not send answers, so there is no receipt."; }
     else {
       const t = document.createElement("table"); t.style.cssText = "border-collapse:collapse;font-size:12.5px;font-family:var(--mono)";
-      t.innerHTML = "<tr><th>paper</th><th>row</th><th>received (UTC)</th><th>fingerprint</th></tr>";
+      t.innerHTML = "<tr><th>paper</th><th>row</th><th>received (UTC)</th><th>fingerprint</th><th>time-stamped</th></tr>";
       R.rows.forEach(x => { const tr = document.createElement("tr");
-        [x.pid, x.seq, (x.received || "").replace("T", " ").slice(0, 19), x.row_hash.slice(0, 16) + "…"].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+        const ts = x.ots && Object.keys(x.ots).length ? `yes (${Object.keys(x.ots).length})` : "pending";
+        [x.pid, x.seq, (x.received || "").replace("T", " ").slice(0, 19), x.row_hash.slice(0, 16) + "…", ts].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
         t.appendChild(tr); });
       B.appendChild(t);
     }
@@ -464,7 +492,7 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
     download(`open_problems_${tag}_${stamp}.csv`, ["expert_name,expert_field,expert_career," + cols.join(",")].concat(rows.map(r => [state.expert.name, state.expert.field, state.expert.career].map(esc).join(",") + "," + r)).join("\n"), "text/csv");
   };
   function render() { renderList(); renderPaper(); renderForm(); updateCount(); }
-  updateCount(); sync();
+  updateCount(); sync(); stampReceipts();
 })();
 </script>
 </body>
