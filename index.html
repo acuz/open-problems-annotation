@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Problems in Mathematics Papers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>
+/* Layout: left sidebar (progress + search) | reading column (paper text) | right column (classification form, sticky). */
+:root {
+  --bg: #f4f5f2; --surface: #ffffff; --ink: #1d2320; --muted: #5f6a64; --rule: #d7dcd6;
+  --accent: #2f6f5e; --accent-ink: #ffffff; --yes: #2f6f5e; --no: #8a4b3a; --unsure: #9a7a1e;
+  --mark: #fff1a8;
+  --serif: "Source Serif 4", Georgia, serif; --sans: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141816; --surface: #1c211f; --ink: #e5ebe7; --muted: #9aa7a0; --rule: #2e3532;
+  --accent: #6cc0a5; --accent-ink: #0f1513; --yes: #6cc0a5; --no: #d98f78; --unsure: #d7b85a; --mark: #5c5320; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #141816; --surface: #1c211f; --ink: #e5ebe7; --muted: #9aa7a0; --rule: #2e3532;
+  --accent: #6cc0a5; --accent-ink: #0f1513; --yes: #6cc0a5; --no: #d98f78; --unsure: #d7b85a; --mark: #5c5320; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.55; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--accent); }
+.hidden { display: none !important; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 10px 18px; border-bottom: 1px solid var(--rule); background: var(--surface); position: sticky; top: 0; z-index: 5; }
+header.top h1 { font-family: var(--serif); font-weight: 600; font-size: 18px; margin: 0; }
+header.top .who { color: var(--muted); font-size: 13px; }
+header.top .spacer { flex: 1; }
+.btn { border: 1px solid var(--rule); background: var(--surface); border-radius: 5px; padding: 6px 12px; cursor: pointer; }
+.btn:hover, .btn:focus-visible { border-color: var(--accent); outline: none; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.progress { height: 6px; width: 160px; background: var(--rule); border-radius: 3px; overflow: hidden; }
+.progress > i { display: block; height: 100%; background: var(--accent); width: 0; }
+/* start screen */
+.start { max-width: 760px; margin: 32px auto; padding-inline: 18px; display: grid; gap: 16px; }
+.start h2 { font-family: var(--serif); font-size: 28px; margin: 0; }
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 18px 20px; }
+.card h3 { margin: 0 0 8px; font-family: var(--serif); }
+.field { display: grid; gap: 4px; margin-bottom: 10px; }
+.field label { font-size: 13px; color: var(--muted); }
+.field input, .field select, textarea { border: 1px solid var(--rule); border-radius: 5px; padding: 7px 9px; background: var(--bg); }
+.guide li { margin-bottom: 6px; }
+kbd { font-family: var(--mono); font-size: 12px; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--bg); }
+/* main */
+.app { display: grid; grid-template-columns: 230px minmax(0, 1fr) 340px; gap: 0; min-height: calc(100vh - 56px); }
+.side { border-right: 1px solid var(--rule); padding: 12px; display: grid; gap: 10px; align-content: start; position: sticky; top: 56px; height: calc(100vh - 56px); overflow: auto; }
+.side input { width: 100%; border: 1px solid var(--rule); border-radius: 5px; padding: 6px 8px; background: var(--surface); }
+.side .filters { display: flex; gap: 4px; flex-wrap: wrap; }
+.side .filters button { font-size: 12px; padding: 3px 7px; }
+.side .filters button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.list { display: grid; gap: 2px; }
+.list button { text-align: left; border: 0; background: transparent; padding: 5px 6px; border-radius: 4px; cursor: pointer; display: flex; gap: 8px; align-items: baseline; font-size: 13px; }
+.list button:hover { background: var(--surface); }
+.list button[aria-current="true"] { background: var(--surface); outline: 1px solid var(--accent); }
+.list .pid { font-family: var(--mono); font-size: 12px; color: var(--muted); flex: none; }
+.list .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--rule); align-self: center; }
+.dot.yes { background: var(--yes); } .dot.no { background: var(--no); } .dot.unsure { background: var(--unsure); }
+.read { padding: 18px 26px 60px; min-width: 0; }
+.read h2 { font-family: var(--serif); font-size: 24px; line-height: 1.25; margin: 4px 0 6px; text-wrap: balance; }
+.meta { color: var(--muted); font-size: 13.5px; display: grid; gap: 3px; }
+.links { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+.links a { font-size: 13px; border: 1px solid var(--rule); border-radius: 4px; padding: 3px 9px; text-decoration: none; background: var(--surface); }
+.pub { font-size: 13.5px; margin-top: 4px; }
+.section-label { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 22px 0 6px; }
+.text { font-family: var(--serif); font-size: 16.5px; line-height: 1.65; max-width: 78ch; white-space: pre-wrap; overflow-wrap: anywhere; }
+.text .katex-display { overflow-x: auto; overflow-y: hidden; }
+mark { background: var(--mark); color: inherit; }
+.form { border-left: 1px solid var(--rule); padding: 16px; position: sticky; top: 56px; height: calc(100vh - 56px); overflow: auto; display: grid; gap: 14px; align-content: start; background: var(--surface); }
+.form h3 { margin: 0; font-size: 14px; }
+.q { display: grid; gap: 6px; }
+.q .qt { font-weight: 600; font-size: 14px; }
+.q .hint { color: var(--muted); font-size: 12.5px; }
+.choice { display: flex; gap: 6px; flex-wrap: wrap; }
+.choice button { border: 1px solid var(--rule); background: var(--bg); border-radius: 5px; padding: 6px 12px; cursor: pointer; }
+.choice button[aria-pressed="true"].yes { background: var(--yes); color: var(--accent-ink); border-color: var(--yes); }
+.choice button[aria-pressed="true"].no { background: var(--no); color: #fff; border-color: var(--no); }
+.choice button[aria-pressed="true"].unsure { background: var(--unsure); color: #1d2320; border-color: var(--unsure); }
+.choice button[aria-pressed="true"].plain { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.checks label { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; margin-bottom: 4px; }
+textarea { width: 100%; min-height: 64px; resize: vertical; }
+.nav { display: flex; gap: 8px; }
+.saved { color: var(--muted); font-size: 12px; min-height: 1em; }
+dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); color: var(--ink); max-width: 560px; }
+@media (max-width: 1100px) { .app { grid-template-columns: 200px minmax(0, 1fr); } .form { grid-column: 1 / -1; position: static; height: auto; border-left: 0; border-top: 1px solid var(--rule); } }
+@media (max-width: 720px) { .app { grid-template-columns: 1fr; } .side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--rule); max-height: 40vh; } .read { padding-inline: 16px; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Open problems in mathematics papers</h1>
+  <span class="who" id="who"></span>
+  <span class="spacer"></span>
+  <span class="who" id="count">0 / 0 classified</span>
+  <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+  <button class="btn" id="guideBtn" type="button">Guide</button>
+  <button class="btn primary" id="exportBtn" type="button">Download my answers</button>
+</header>
+
+<section class="start" id="start">
+  <h2>Classifying open problems in mathematics papers</h2>
+  <div class="card">
+    <p>Thank you for helping. We study how often mathematics papers pose open problems, and how well simple, transparent rules can find them. You will see the title, abstract and introduction of 120 arXiv papers. For each, tell us whether the paper itself poses or explicitly flags an open mathematical problem.</p>
+    <p>Your answers are saved in this browser as you go (nothing is sent anywhere). When you finish, or whenever you want to pause, press <b>Download my answers</b> and send the file back by email to the address in the invitation. You can stop and come back later on the same computer and browser; to move to another computer, download your answers and use <b>Import</b> there.</p>
+    <p>About 2–4 minutes per paper. You do not need to finish all papers: every answer is useful.</p>
+  </div>
+  <div class="card" id="guideCard">
+    <h3>What counts as posing an open problem</h3>
+    <p>Answer <b>yes</b> if, in the abstract or introduction, the authors in their own voice:</p>
+    <ol class="guide">
+      <li><b>pose a new problem</b>: they state their own conjecture or question (“we conjecture…”, “we ask whether…”, “Question 1.3”, “it would be interesting to know whether…”);</li>
+      <li><b>flag a problem as open now</b>: “… remains open”, “is still unknown”, “has not been proved”, “we were unable to …”, “the general case remains open”;</li>
+      <li><b>list open problems</b>: a survey or section that presents open problems.</li>
+    </ol>
+    <p>Answer <b>no</b> when the paper only proves, disproves or makes progress on someone else's problem without saying what remains open; when a conjecture appears only as background; or when a “Conjecture” statement is someone else's conjecture that the paper then proves. Use <b>unsure</b> freely.</p>
+    <p>Keyboard: <kbd>Y</kbd> yes, <kbd>N</kbd> no, <kbd>U</kbd> unsure, <kbd>→</kbd> or <kbd>J</kbd> next, <kbd>←</kbd> or <kbd>K</kbd> previous (not while typing). Use your browser's <kbd>Ctrl</kbd>+<kbd>F</kbd> to search the text; the box in the sidebar finds papers that contain a word.</p>
+  </div>
+  <div class="card">
+    <h3>About you</h3>
+    <div class="field"><label for="name">Name (or initials)</label><input id="name" autocomplete="name"></div>
+    <div class="field"><label for="field">Main research area</label><input id="field" placeholder="e.g. combinatorics, analytic number theory"></div>
+    <div class="field"><label for="career">Career stage</label>
+      <select id="career"><option value="">—</option><option>PhD student</option><option>Postdoc</option><option>Faculty / permanent researcher</option><option>Other</option></select></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn primary" id="startBtn" type="button">Start classifying</button>
+      <label class="btn" for="importFile" style="display:inline-block">Import saved answers</label>
+      <input type="file" id="importFile" accept=".json" class="hidden">
+    </div>
+    <p class="saved" id="startMsg"></p>
+  </div>
+</section>
+
+<main class="app hidden" id="app">
+  <nav class="side" aria-label="Papers">
+    <input id="search" type="search" placeholder="Find papers containing…" aria-label="Find papers containing a word">
+    <div class="filters" role="group" aria-label="Filter papers">
+      <button class="btn" data-f="all" aria-pressed="true" type="button">All</button>
+      <button class="btn" data-f="todo" aria-pressed="false" type="button">To do</button>
+      <button class="btn" data-f="done" aria-pressed="false" type="button">Done</button>
+    </div>
+    <div class="list" id="list"></div>
+  </nav>
+  <article class="read" id="read" aria-live="polite"></article>
+  <aside class="form" aria-label="Classification">
+    <h3 id="formTitle">Classification</h3>
+    <div class="q">
+      <span class="qt">1. Does the paper pose or explicitly flag an open mathematical problem?</span>
+      <div class="choice" id="q1">
+        <button type="button" class="yes" data-v="yes">Yes</button>
+        <button type="button" class="no" data-v="no">No</button>
+        <button type="button" class="unsure" data-v="unsure">Unsure</button>
+      </div>
+    </div>
+    <div class="q" id="q2box">
+      <span class="qt">2. How? (tick all that apply)</span>
+      <div class="checks">
+        <label><input type="checkbox" value="own"> Poses its own conjecture or question</label>
+        <label><input type="checkbox" value="flags_open"> Says a known problem is still open</label>
+        <label><input type="checkbox" value="list"> Lists or surveys open problems</label>
+      </div>
+    </div>
+    <div class="q" id="q3box">
+      <span class="qt">3. Where did you see it?</span>
+      <div class="choice" id="q3">
+        <button type="button" class="plain" data-v="abstract">Abstract</button>
+        <button type="button" class="plain" data-v="introduction">Introduction</button>
+        <button type="button" class="plain" data-v="both">Both</button>
+      </div>
+    </div>
+    <div class="q" id="q4box">
+      <span class="qt">4. The problem, in a few words</span>
+      <textarea id="q4" placeholder="optional"></textarea>
+    </div>
+    <div class="q">
+      <span class="qt">5. How confident are you?</span>
+      <div class="choice" id="q5">
+        <button type="button" class="plain" data-v="low">Low</button>
+        <button type="button" class="plain" data-v="medium">Medium</button>
+        <button type="button" class="plain" data-v="high">High</button>
+      </div>
+    </div>
+    <div class="q">
+      <span class="qt">6. Comment</span>
+      <span class="hint">Anything unusual: an ambiguous case, a problem stated later in the paper, a wrong abstract…</span>
+      <textarea id="q6" placeholder="optional"></textarea>
+    </div>
+    <div class="nav">
+      <button class="btn" id="prev" type="button">← Previous</button>
+      <button class="btn primary" id="next" type="button">Next →</button>
+    </div>
+    <span class="saved" id="saved"></span>
+  </aside>
+</main>
+
+<dialog id="guideDlg"><div id="guideCopy"></div><p><button class="btn" id="closeGuide" type="button">Close</button></p></dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+(async function () {
+  const KEY = "open-problems-annotation-v1";
+  const store = { get() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } },
+                  set(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); return true; } catch (e) { return false; } } };
+  let state = Object.assign({ expert: {}, answers: {}, current: 0 }, store.get());
+  const papers = await (await fetch("papers.json")).json();
+  const $ = id => document.getElementById(id);
+  let filter = "all", query = "";
+  const lc = s => (s || "").toLowerCase();
+
+  // start screen
+  ["name", "field", "career"].forEach(k => { $(k).value = state.expert[k] || ""; });
+  if (Object.keys(state.answers).length) $("startMsg").textContent = `${Object.keys(state.answers).length} answers saved in this browser; you can continue where you left off.`;
+  $("startBtn").onclick = () => {
+    state.expert = { name: $("name").value.trim(), field: $("field").value.trim(), career: $("career").value };
+    if (!state.expert.name) { $("startMsg").textContent = "Please enter a name or initials, so we can tell answer files apart."; $("name").focus(); return; }
+    save(); $("start").classList.add("hidden"); $("app").classList.remove("hidden"); render();
+  };
+  $("importFile").onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { try { const d = JSON.parse(r.result); state.expert = d.expert || state.expert; state.answers = Object.assign({}, state.answers, d.answers || {});
+      ["name", "field", "career"].forEach(k => { $(k).value = state.expert[k] || ""; }); save();
+      $("startMsg").textContent = `Imported ${Object.keys(d.answers || {}).length} answers.`; } catch (err) { $("startMsg").textContent = "That file could not be read. Use a file downloaded from this page (.json)."; } };
+    r.readAsText(f);
+  };
+  $("guideCopy").innerHTML = $("guideCard").innerHTML;
+  $("guideBtn").onclick = () => $("guideDlg").showModal();
+  $("closeGuide").onclick = () => $("guideDlg").close();
+
+  function save() { const ok = store.set(state); $("saved").textContent = ok ? "Saved in this browser" : "Could not save in this browser — download your answers regularly."; updateCount(); }
+  function updateCount() {
+    const n = papers.filter(p => state.answers[p.pid] && state.answers[p.pid].poses).length;
+    $("count").textContent = `${n} / ${papers.length} classified`; $("bar").style.width = (100 * n / papers.length) + "%";
+    $("who").textContent = state.expert.name ? `Classifier: ${state.expert.name}` : "";
+  }
+  function visible() {
+    return papers.map((p, i) => ({ p, i })).filter(({ p }) => {
+      const a = state.answers[p.pid]; const done = a && a.poses;
+      if (filter === "todo" && done) return false; if (filter === "done" && !done) return false;
+      if (query) return lc(p.title + " " + p.abstract + " " + p.introduction).includes(query);
+      return true;
+    });
+  }
+  function renderList() {
+    const L = $("list"); L.innerHTML = "";
+    visible().forEach(({ p, i }) => {
+      const b = document.createElement("button"); b.type = "button";
+      const a = state.answers[p.pid]; const dot = document.createElement("span"); dot.className = "dot " + (a && a.poses ? a.poses : "");
+      const id = document.createElement("span"); id.className = "pid"; id.textContent = p.pid;
+      const t = document.createElement("span"); t.className = "t"; t.textContent = p.title;
+      b.append(dot, id, t); b.title = p.title; if (i === state.current) b.setAttribute("aria-current", "true");
+      b.onclick = () => { state.current = i; save(); render(); }; L.appendChild(b);
+    });
+  }
+  function highlight(el) {
+    if (!query) return;
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); const hits = [];
+    while (walk.nextNode()) { const n = walk.currentNode; if (n.parentElement.closest(".katex")) continue; if (lc(n.nodeValue).includes(query)) hits.push(n); }
+    hits.forEach(n => { const parts = n.nodeValue.split(new RegExp("(" + query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "i"));
+      const frag = document.createDocumentFragment(); parts.forEach((s, k) => { if (k % 2) { const m = document.createElement("mark"); m.textContent = s; frag.appendChild(m); } else frag.appendChild(document.createTextNode(s)); });
+      n.replaceWith(frag); });
+  }
+  function textBlock(label, content) {
+    const l = document.createElement("div"); l.className = "section-label"; l.textContent = label;
+    const d = document.createElement("div"); d.className = "text"; d.textContent = content || "(not available)";
+    return [l, d];
+  }
+  function renderPaper() {
+    const p = papers[state.current]; const R = $("read"); R.innerHTML = "";
+    const id = document.createElement("div"); id.className = "section-label"; id.textContent = `${p.pid} · ${p.category} · ${p.month}`;
+    const h = document.createElement("h2"); h.textContent = p.title;
+    const meta = document.createElement("div"); meta.className = "meta";
+    const au = document.createElement("div"); au.textContent = p.authors.join(", ");
+    const lic = document.createElement("div"); lic.innerHTML = `Licence: <a href="${p.licence}" target="_blank" rel="noopener">${p.licence.replace(/^https?:\/\//, "")}</a> · text reproduced from arXiv with attribution`;
+    meta.append(au, lic);
+    const links = document.createElement("div"); links.className = "links";
+    const mk = (href, t) => { const a = document.createElement("a"); a.href = href; a.textContent = t; a.target = "_blank"; a.rel = "noopener"; return a; };
+    links.append(mk(`https://arxiv.org/abs/${p.arxiv_id}`, `arXiv:${p.arxiv_id}`), mk(`https://arxiv.org/pdf/${p.arxiv_id}`, "PDF"));
+    if (p.published && p.published.url) links.append(mk(p.published.url, "Published version"));
+    const pub = document.createElement("div"); pub.className = "pub";
+    if (p.published) pub.textContent = `Published in ${p.published.journal}${p.published.volume ? " " + p.published.volume : ""}${p.published.year ? " (" + p.published.year + ")" : ""}${p.published.doi ? " · DOI " + p.published.doi : ""}`;
+    else if (p.journal_ref) pub.textContent = `Journal reference (from arXiv): ${p.journal_ref}`;
+    else pub.textContent = "No peer-reviewed publication found (arXiv preprint).";
+    R.append(id, h, meta, links, pub, ...textBlock("Abstract", p.abstract), ...textBlock("Introduction", p.introduction));
+    if (window.renderMathInElement) renderMathInElement(R, { delimiters: [{ left: "$$", right: "$$", display: true }, { left: "\\[", right: "\\]", display: true }, { left: "$", right: "$", display: false }, { left: "\\(", right: "\\)", display: false }], throwOnError: false });
+    highlight(R); R.scrollTop = 0; window.scrollTo(0, 0);
+  }
+  function renderForm() {
+    const p = papers[state.current]; const a = state.answers[p.pid] || {};
+    $("formTitle").textContent = `Classification · ${p.pid}`;
+    [["q1", "poses"], ["q3", "where"], ["q5", "confidence"]].forEach(([q, k]) => document.querySelectorAll(`#${q} button`).forEach(b => b.setAttribute("aria-pressed", String(a[k] === b.dataset.v))));
+    document.querySelectorAll("#q2box input").forEach(c => { c.checked = (a.how || []).includes(c.value); });
+    $("q4").value = a.statement || ""; $("q6").value = a.comment || "";
+    const off = a.poses !== "yes"; ["q2box", "q3box", "q4box"].forEach(id => { $(id).style.opacity = off ? .45 : 1; });
+    $("prev").disabled = state.current === 0; $("next").textContent = state.current === papers.length - 1 ? "Finish" : "Next →";
+  }
+  function setAns(k, v) { const p = papers[state.current]; state.answers[p.pid] = Object.assign({ arxiv_id: p.arxiv_id }, state.answers[p.pid], { [k]: v, updated: new Date().toISOString() }); save(); renderForm(); renderList(); }
+  [["q1", "poses"], ["q3", "where"], ["q5", "confidence"]].forEach(([q, k]) => document.querySelectorAll(`#${q} button`).forEach(b => b.onclick = () => setAns(k, b.dataset.v)));
+  document.querySelectorAll("#q2box input").forEach(c => c.onchange = () => setAns("how", [...document.querySelectorAll("#q2box input:checked")].map(x => x.value)));
+  $("q4").oninput = () => setAns("statement", $("q4").value); $("q6").oninput = () => setAns("comment", $("q6").value);
+  function go(d) { const n = state.current + d; if (n < 0) return; if (n >= papers.length) { $("guideDlg").close?.(); alertDone(); return; } state.current = n; save(); render(); }
+  function alertDone() { $("saved").textContent = "That was the last paper. Thank you — please press Download my answers and send the file back."; }
+  $("prev").onclick = () => go(-1); $("next").onclick = () => go(1);
+  document.addEventListener("keydown", e => {
+    if ($("app").classList.contains("hidden") || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if (k === "y") setAns("poses", "yes"); else if (k === "n") setAns("poses", "no"); else if (k === "u") setAns("poses", "unsure");
+    else if (k === "arrowright" || k === "j") go(1); else if (k === "arrowleft" || k === "k") go(-1);
+  });
+  $("search").oninput = e => { query = lc(e.target.value.trim()); renderList(); renderPaper(); };
+  document.querySelectorAll(".filters button").forEach(b => b.onclick = () => { filter = b.dataset.f; document.querySelectorAll(".filters button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); renderList(); });
+  function download(name, text, type) { const url = URL.createObjectURL(new Blob([text], { type })); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+  $("exportBtn").onclick = () => {
+    const tag = (state.expert.name || "expert").replace(/[^A-Za-z0-9]+/g, "_"); const stamp = new Date().toISOString().slice(0, 10);
+    download(`open_problems_${tag}_${stamp}.json`, JSON.stringify({ expert: state.expert, exported: new Date().toISOString(), answers: state.answers }, null, 1), "application/json");
+    const cols = ["pid", "arxiv_id", "poses", "how", "where", "statement", "confidence", "comment", "updated"];
+    const esc = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const rows = papers.filter(p => state.answers[p.pid]).map(p => { const a = state.answers[p.pid]; return [p.pid, p.arxiv_id, a.poses, (a.how || []).join(";"), a.where, a.statement, a.confidence, a.comment, a.updated].map(esc).join(","); });
+    download(`open_problems_${tag}_${stamp}.csv`, ["expert_name,expert_field,expert_career," + cols.join(",")].concat(rows.map(r => [state.expert.name, state.expert.field, state.expert.career].map(esc).join(",") + "," + r)).join("\n"), "text/csv");
+  };
+  function render() { renderList(); renderPaper(); renderForm(); updateCount(); }
+  updateCount();
+})();
+</script>
+</body>
+</html>
