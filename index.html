@@ -62,12 +62,12 @@ kbd { font-family: var(--mono); font-size: 12px; border: 1px solid var(--rule); 
 .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--rule); align-self: center; }
 .dot.yes { background: var(--yes); } .dot.no { background: var(--no); } .dot.unsure { background: var(--unsure); }
 .read { padding: 18px 26px 60px; min-width: 0; }
-.read h2 { font-family: var(--serif); font-size: 24px; line-height: 1.25; margin: 4px 0 6px; text-wrap: balance; }
+.read h2 { font-family: var(--serif); font-size: 24px; line-height: 1.25; margin: 4px auto 6px; text-wrap: balance; }
 .meta { color: var(--muted); font-size: 13.5px; display: grid; gap: 3px; }
-.links { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+.links { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px auto 4px; }
 .links a { font-size: 13px; border: 1px solid var(--rule); border-radius: 4px; padding: 3px 9px; text-decoration: none; background: var(--surface); }
 .pub { font-size: 13.5px; margin-top: 4px; }
-.section-label { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 22px 0 6px; }
+.section-label { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 22px auto 6px; }
 .ptext { font-family: var(--serif); font-size: 16.5px; line-height: 1.65; max-width: 78ch; white-space: pre-wrap; overflow-wrap: anywhere; }
 .ptext .katex-display { overflow-x: auto; overflow-y: hidden; }
 mark { background: var(--mark); color: inherit; }
@@ -89,9 +89,12 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 /* text converted from the authors' LaTeX (pandoc): paragraphs, theorem-like blocks, headings, lists, displayed maths */
 .ptext.rich { white-space: normal; }
 /* abstract: narrow, centred, justified (as on a paper's first page); introduction: full width of the reading column */
+/* one centred page column for everything (title, metadata, abstract, introduction), like a paper's page;
+   the abstract is indented on both sides within it */
+.read > * { max-width: 92ch; margin-left: auto; margin-right: auto; }
 .label-abstract { text-align: center; }
-.rich.abstract { max-width: 62ch; margin: 0 auto; font-size: 15.5px; text-align: justify; hyphens: auto; }
-.rich.intro { max-width: 112ch; }
+.read > .rich.abstract { max-width: 78ch; font-size: 15.5px; text-align: justify; hyphens: auto; }
+.read > .rich.intro { max-width: 92ch; text-align: justify; hyphens: auto; }
 .rich p { margin: 0 0 0.85em; }
 .rich h4 { font-family: var(--serif); font-size: 17px; margin: 1.3em 0 0.5em; }
 .rich > div, .rich div:not(.math) { margin: 0.9em 0; padding: 0.4em 0 0.1em 0.9em; border-left: 3px solid var(--rule); }
@@ -146,7 +149,7 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
     <p><i>Powers of planar graphs, product structure, and blocking partitions</i> (Distel, Hickingbotham, Seweryn, Wood, 2023).</p>
     <ul class="guide">
       <li><b>Question 2: Resolves it.</b> The abstract says “This resolves an open problem of Ossona de Mendez” and “This resolves an open problem of Dujmović, Morin and Wood”; the introduction states both as Questions and says “We resolve this question”. In 2a you could write “Ossona de Mendez’s question on k-powers of planar graphs; Dujmović–Morin–Wood question on k-planar graphs”.</li>
-      <li><b>Question 1: Yes.</b> The paper states no conjecture of its own in the introduction, but the introduction announces that the final section “introduces some natural open problems that arise from this work”. Announcing open problems that the paper presents counts as <b>listing open problems</b> (1a), seen in the <b>introduction</b> (1b).</li>
+      <li><b>Question 1: Yes.</b> The introduction states no conjecture explicitly, but announces that the final section “introduces some natural open problems that arise from this work”. These are the authors’ own new problems, presented in the paper: tick <b>poses its own conjecture or question</b> and <b>lists open problems</b> (1a), seen in the <b>introduction</b> (1b).</li>
       <li>So this paper is “Yes” to both questions. A paper that resolved the two problems and said nothing about what remains open would be “No” to question 1.</li>
     </ul>
     <p>Keyboard: <kbd>Y</kbd> yes, <kbd>N</kbd> no, <kbd>U</kbd> unsure, <kbd>→</kbd> or <kbd>J</kbd> next, <kbd>←</kbd> or <kbd>K</kbd> previous (not while typing). Use your browser's <kbd>Ctrl</kbd>+<kbd>F</kbd> to search the text; the box in the sidebar finds papers that contain a word.</p>
