@@ -109,7 +109,10 @@ function doPost(e) {
                       clip_(d.page_version), h.hash];
       const canonical = JSON.stringify(fields);
       const hash = sha_(canonical);
-      rows.push(fields.concat([hash, canonical]));
+      // readable cells: a leading = + - @ would be read as a formula even in text format, so prefix an apostrophe
+      // (Sheets' quote prefix); the canonical column is authoritative and is never altered
+      const readable = fields.map(v => /^[=+\-@]/.test(v) ? "'" + v : v);
+      rows.push(readable.concat([hash, canonical]));
       receipts.push({ pid: r.pid, seq: seq, row_hash: hash, received: now, updated: clip_(r.updated) });
       h = { seq: seq, hash: hash };
     }
