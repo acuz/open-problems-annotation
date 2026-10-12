@@ -98,14 +98,14 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   <span class="who" id="count">0 / 0 classified</span>
   <div class="progress" aria-hidden="true"><i id="bar"></i></div>
   <button class="btn" id="guideBtn" type="button">Guide</button>
-  <button class="btn primary" id="exportBtn" type="button">Download my answers</button>
+  <button class="btn" id="exportBtn" type="button">Download a copy</button>
 </header>
 
 <section class="start" id="start">
   <h2>Classifying open problems in mathematics papers</h2>
   <div class="card">
     <p>Thank you for helping. We study how often mathematics papers pose open problems, and how well simple, transparent rules can find them. You will see the title, abstract and introduction of 120 arXiv papers. For each, tell us whether the paper itself poses or explicitly flags an open mathematical problem.</p>
-    <p>Your answers are saved in this browser as you go (nothing is sent anywhere). When you finish, or whenever you want to pause, press <b>Download my answers</b> and send the file back by email to the address in the invitation. You can stop and come back later on the same computer and browser; to move to another computer, download your answers and use <b>Import</b> there.</p>
+    <p id="storageNote">Your answers are saved as you go. You can stop and come back later on the same computer and browser; to move to another computer, press <b>Download a copy</b> and use <b>Import</b> there.</p>
     <p>About 2–4 minutes per paper. You do not need to finish all papers: every answer is useful.</p>
   </div>
   <div class="card" id="guideCard">
@@ -203,13 +203,23 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
 <script>
 (async function () {
   const KEY = "open-problems-annotation-v1";
+  // Central storage: URL of the Google Apps Script web app (apps_script.gs) that appends answers to the team's sheet.
+  // Empty = answers stay in this browser only and are returned with "Download a copy".
+  const ENDPOINT = "https://script.google.com/macros/s/AKfycbyi_eLVEGkEj20HdeBxw7y7RzppM0WgXQHsRQ1FS8thU-VQRqrqWUgAR7fHhpZ2DyAK/exec";
+  const PAGE_VERSION = "2026-10-12";
+  const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
   const store = { get() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } },
                   set(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); return true; } catch (e) { return false; } } };
-  let state = Object.assign({ expert: {}, answers: {}, current: 0 }, store.get());
+  let state = Object.assign({ expert: {}, answers: {}, current: 0, pending: [] }, store.get());
+  if (!state.annotator_id) state.annotator_id = uid();
   const papers = await (await fetch("papers.json")).json();
   const $ = id => document.getElementById(id);
   let filter = "all", query = "";
   const lc = s => (s || "").toLowerCase();
+
+  $("storageNote").innerHTML = ENDPOINT
+    ? "Your answers are sent to the research team as you go (to a Google Sheet held by the team, together with the name, area and career stage you enter below) and are also kept in this browser. Nothing needs to be emailed. You can stop and come back later; on another computer, press <b>Download a copy</b> here and use <b>Import</b> there."
+    : $("storageNote").innerHTML + " When you finish, press <b>Download a copy</b> and send the file to the research team.";
 
   // start screen
   ["name", "field", "career"].forEach(k => { $(k).value = state.expert[k] || ""; });
@@ -222,8 +232,8 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   $("importFile").onchange = e => {
     const f = e.target.files[0]; if (!f) return;
     const r = new FileReader();
-    r.onload = () => { try { const d = JSON.parse(r.result); state.expert = d.expert || state.expert; state.answers = Object.assign({}, state.answers, d.answers || {});
-      ["name", "field", "career"].forEach(k => { $(k).value = state.expert[k] || ""; }); save();
+    r.onload = () => { try { const d = JSON.parse(r.result); state.expert = d.expert || state.expert; if (d.annotator_id) state.annotator_id = d.annotator_id; state.answers = Object.assign({}, state.answers, d.answers || {});
+      ["name", "field", "career"].forEach(k => { $(k).value = state.expert[k] || ""; }); Object.keys(d.answers || {}).forEach(queue); save();
       $("startMsg").textContent = `Imported ${Object.keys(d.answers || {}).length} answers.`; } catch (err) { $("startMsg").textContent = "That file could not be read. Use a file downloaded from this page (.json)."; } };
     r.readAsText(f);
   };
@@ -231,7 +241,27 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   $("guideBtn").onclick = () => $("guideDlg").showModal();
   $("closeGuide").onclick = () => $("guideDlg").close();
 
-  function save() { const ok = store.set(state); $("saved").textContent = ok ? "Saved in this browser" : "Could not save in this browser — download your answers regularly."; updateCount(); }
+  let syncMsg = "";
+  function save() { const ok = store.set(state); $("saved").textContent = (ok ? "Saved in this browser" : "Could not save in this browser — download a copy regularly.") + syncMsg; updateCount(); }
+  // send changed answers to the central sheet: queue the pid, send after a pause in typing, retry until confirmed
+  let timer = null, sending = false;
+  function queue(pid) { if (!ENDPOINT) return; if (!state.pending.includes(pid)) state.pending.push(pid); if (!syncMsg.includes("retry")) syncMsg = " · sending…"; clearTimeout(timer); timer = setTimeout(sync, 1500); }
+  async function sync() {
+    if (!ENDPOINT || sending || !state.pending.length) return;
+    sending = true; const batch = state.pending.slice(0, 150);
+    const records = batch.filter(pid => state.answers[pid]).map(pid => Object.assign({ pid }, state.answers[pid]));
+    try {
+      const r = await fetch(ENDPOINT, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ annotator_id: state.annotator_id, expert: state.expert, page_version: PAGE_VERSION, records }) });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error || "rejected");
+      state.pending = state.pending.filter(pid => !batch.includes(pid) || state.answers[pid]?.updated > (records.find(x => x.pid === pid) || {}).updated);
+      syncMsg = state.pending.length ? " · sending…" : " · sent to the research team";
+    } catch (err) { syncMsg = " · not sent yet (will retry; your answers are safe here)"; }
+    sending = false; save();
+    if (state.pending.length) setTimeout(sync, syncMsg.includes("retry") ? 30000 : 500);
+  }
+  window.addEventListener("online", sync);
   function updateCount() {
     const n = papers.filter(p => state.answers[p.pid] && state.answers[p.pid].poses).length;
     $("count").textContent = `${n} / ${papers.length} classified`; $("bar").style.width = (100 * n / papers.length) + "%";
@@ -298,12 +328,13 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
     const off = a.poses !== "yes"; ["q2box", "q3box", "q4box"].forEach(id => { $(id).style.opacity = off ? .45 : 1; });
     $("prev").disabled = state.current === 0; $("next").textContent = state.current === papers.length - 1 ? "Finish" : "Next →";
   }
-  function setAns(k, v) { const p = papers[state.current]; state.answers[p.pid] = Object.assign({ arxiv_id: p.arxiv_id }, state.answers[p.pid], { [k]: v, updated: new Date().toISOString() }); save(); renderForm(); renderList(); }
+  function setAns(k, v) { const p = papers[state.current]; state.answers[p.pid] = Object.assign({ arxiv_id: p.arxiv_id }, state.answers[p.pid], { [k]: v, updated: new Date().toISOString() }); queue(p.pid); save(); renderForm(); renderList(); }
   [["q1", "poses"], ["q3", "where"], ["q5", "confidence"]].forEach(([q, k]) => document.querySelectorAll(`#${q} button`).forEach(b => b.onclick = () => setAns(k, b.dataset.v)));
   document.querySelectorAll("#q2box input").forEach(c => c.onchange = () => setAns("how", [...document.querySelectorAll("#q2box input:checked")].map(x => x.value)));
   $("q4").oninput = () => setAns("statement", $("q4").value); $("q6").oninput = () => setAns("comment", $("q6").value);
   function go(d) { const n = state.current + d; if (n < 0) return; if (n >= papers.length) { $("guideDlg").close?.(); alertDone(); return; } state.current = n; save(); render(); }
-  function alertDone() { $("saved").textContent = "That was the last paper. Thank you — please press Download my answers and send the file back."; }
+  function alertDone() { $("saved").textContent = ENDPOINT ? "That was the last paper. Thank you — your answers have been sent to the research team." + (state.pending.length ? " A few are still being sent: keep this page open for a minute." : "")
+                                                        : "That was the last paper. Thank you — please press Download a copy and send the file to the research team."; }
   $("prev").onclick = () => go(-1); $("next").onclick = () => go(1);
   document.addEventListener("keydown", e => {
     if ($("app").classList.contains("hidden") || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -316,14 +347,14 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   function download(name, text, type) { const url = URL.createObjectURL(new Blob([text], { type })); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
   $("exportBtn").onclick = () => {
     const tag = (state.expert.name || "expert").replace(/[^A-Za-z0-9]+/g, "_"); const stamp = new Date().toISOString().slice(0, 10);
-    download(`open_problems_${tag}_${stamp}.json`, JSON.stringify({ expert: state.expert, exported: new Date().toISOString(), answers: state.answers }, null, 1), "application/json");
+    download(`open_problems_${tag}_${stamp}.json`, JSON.stringify({ expert: state.expert, annotator_id: state.annotator_id, exported: new Date().toISOString(), answers: state.answers }, null, 1), "application/json");
     const cols = ["pid", "arxiv_id", "poses", "how", "where", "statement", "confidence", "comment", "updated"];
     const esc = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const rows = papers.filter(p => state.answers[p.pid]).map(p => { const a = state.answers[p.pid]; return [p.pid, p.arxiv_id, a.poses, (a.how || []).join(";"), a.where, a.statement, a.confidence, a.comment, a.updated].map(esc).join(","); });
     download(`open_problems_${tag}_${stamp}.csv`, ["expert_name,expert_field,expert_career," + cols.join(",")].concat(rows.map(r => [state.expert.name, state.expert.field, state.expert.career].map(esc).join(",") + "," + r)).join("\n"), "text/csv");
   };
   function render() { renderList(); renderPaper(); renderForm(); updateCount(); }
-  updateCount();
+  updateCount(); sync();
 })();
 </script>
 </body>
