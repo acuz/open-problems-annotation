@@ -96,6 +96,9 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 .rich .math.display { display: block; overflow-x: auto; overflow-y: hidden; padding: 0.2em 0; }
 .rich .katex-display { margin: 0.4em 0; }
 .rich blockquote { margin: 0.6em 0 0.6em 1em; color: var(--muted); }
+.sent { min-height: 1.2em; margin: 0.3em 0; font-size: 14px; font-weight: 600; }
+.sent.ok { color: var(--yes); }
+.sent.err { color: var(--no); }
 #receiptBody th, #receiptBody td { padding: 2px 14px 2px 0; text-align: left; white-space: nowrap; font-variant-numeric: tabular-nums; }
 #receiptBody th { color: var(--muted); font-weight: 500; }
 dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); color: var(--ink); max-width: 560px; }
@@ -235,6 +238,7 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   <p class="hint">Every answer you send is stored as a row of an append-only log and gets a fingerprint (SHA-256) chained to all earlier rows. Your browser also time-stamps each fingerprint itself with independent public services (OpenTimestamps, anchored in Bitcoin), without going through the research team. When the data are published you can check that your rows appear unchanged, and the time-stamps prove they existed even if a row were removed. Keep this receipt: download it, or have it e-mailed to you.</p>
   <div id="receiptBody" style="max-height:45vh;overflow:auto"></div>
   <p class="saved" id="receiptMsg"></p>
+  <p class="sent" id="receiptSent" role="status" aria-live="polite"></p>
   <p style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn" id="receiptDownload" type="button">Download receipt</button>
     <button class="btn" id="receiptEmail" type="button">E-mail me my receipt</button>
@@ -365,18 +369,33 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
     $("receiptMsg").textContent = `Annotator id ${state.annotator_id}` + (state.head ? ` · log head when last sent: row ${state.head.seq}` : "");
     $("receiptEmail").disabled = !ENDPOINT || !state.expert.email || !R.rows.length;
     $("receiptEmail").title = state.expert.email ? `Sends the receipt to ${state.expert.email}` : "Enter an e-mail address on the start screen to use this";
+    renderSent();
+  }
+  function renderSent() {
+    const s = $("receiptSent"), b = $("receiptEmail");
+    if (state.emailed_at) {
+      const t = new Date(state.emailed_at);
+      s.textContent = `✓ Sent to ${state.emailed_to || state.expert.email} at ${t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` +
+                      (t.toDateString() === new Date().toDateString() ? "" : ` on ${t.toLocaleDateString()}`) + ` (${state.emailed_rows} ${state.emailed_rows === 1 ? "row" : "rows"})`;
+      s.className = "sent ok"; b.textContent = "E-mail it again";
+    } else { s.textContent = ""; s.className = "sent"; b.textContent = "E-mail me my receipt"; }
   }
   async function emailReceipt(auto) {
     if (!ENDPOINT || !state.expert.email) return;
+    const b = $("receiptEmail"); b.disabled = true; b.textContent = "Sending…"; $("receiptSent").textContent = "";
     try {
       const r = await fetch(ENDPOINT, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({ action: "receipt", annotator_id: state.annotator_id }) });
       const d = await r.json();
       if (!d.ok) throw new Error(d.error || "not sent");
-      state.emailed = true; save();
-      $("receiptMsg").textContent = `Receipt e-mailed to ${state.expert.email} (${d.rows} rows).`;
+      Object.assign(state, { emailed: true, emailed_at: new Date().toISOString(), emailed_to: state.expert.email, emailed_rows: d.rows }); save();
+      renderSent();
       if (auto) $("saved").textContent = `Thank you — all your answers are recorded, and a receipt has been e-mailed to ${state.expert.email}.`;
-    } catch (err) { $("receiptMsg").textContent = "The receipt could not be e-mailed (" + err.message + "). Download it instead."; }
+    } catch (err) {
+      renderSent(); $("receiptSent").className = "sent err";
+      $("receiptSent").textContent = "✗ Not sent (" + err.message + "). Please download the receipt instead.";
+    }
+    b.disabled = !state.expert.email;
   }
   $("receiptBtn").onclick = () => { renderReceipt(); $("receiptDlg").showModal(); };
   $("closeReceipt").onclick = () => $("receiptDlg").close();
