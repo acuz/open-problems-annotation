@@ -89,7 +89,10 @@ function doPost(e) {
   try { d = JSON.parse(e.postData.contents); } catch (err) { return out_({ ok: false, error: "bad json" }); }
   const id = String(d.annotator_id || "");
   if (!/^[A-Za-z0-9-]{8,64}$/.test(id)) return out_({ ok: false, error: "bad annotator id" });
-  if (d.action === "receipt") return receipt_(id, d);
+  if (d.action === "receipt") {
+    // any failure (e.g. missing permission to send e-mail) is returned as JSON so the page can show it
+    try { return receipt_(id, d); } catch (err) { return out_({ ok: false, error: "receipt not sent: " + err }); }
+  }
   const recs = (Array.isArray(d.records) ? d.records.slice(0, MAX_RECORDS) : []).filter(r => /^P\d{3}$/.test(String(r.pid || "")));
   if (!recs.length) return out_({ ok: false, error: "no valid records" });
   const ex = d.expert || {};
@@ -186,6 +189,9 @@ function anchor() {
 
 /** Run once from the editor: authorises MailApp/UrlFetchApp and installs the daily anchoring trigger. */
 function setup() {
+  // sending a test e-mail to the owner forces Google to ask for the e-mail permission now (once)
+  MailApp.sendEmail(Session.getEffectiveUser().getEmail(), "Expert log: e-mail receipts enabled",
+                    "This confirms that the classification log can send receipts. No action needed.");
   ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === "anchor").forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger("anchor").timeBased().everyDays(1).atHour(23).create();
   log_(); ids_(); anchors_(); sent_();
