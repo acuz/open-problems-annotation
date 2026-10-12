@@ -1,11 +1,14 @@
 # Open problems in mathematics papers — expert classification
 
-A static page for mathematicians to classify whether arXiv papers pose or explicitly flag open problems.
+A static page for mathematicians to classify whether arXiv papers pose or explicitly flag open problems, and whether
+they resolve (or make partial progress on) a conjecture or problem posed before.
 Built by `analysis/scripts/4.1_build_annotation_site.py` (project "The Frontier Under Full Automation").
 
 - 120 arXiv mathematics papers, each released under a Creative Commons licence that allows redistribution with
   attribution (CC BY, BY-SA, BY-NC, BY-NC-SA, CC0); authors, licence and arXiv link are shown with every paper.
-- Text: title and abstract from arXiv metadata; introduction extracted from the authors' LaTeX source.
+- Text: title and abstract from arXiv metadata; introduction from the authors' LaTeX source, converted to HTML with
+  pandoc (the authors' own macros expanded; figures, tables and code omitted; citations shown as [ref]); maths rendered
+  with KaTeX.
 - Published versions from Semantic Scholar where available.
 - Answers are kept in the classifier's browser (localStorage) and sent as they change to a Google Apps Script web
   app (`apps_script.gs`) that appends them to a Google Sheet held by the research team. Failed sends are queued and

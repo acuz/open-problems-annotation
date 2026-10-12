@@ -24,8 +24,9 @@
  * Verification: analysis/scripts/4.3_verify_expert_log.py recomputes the chain, checks anchors and receipts.
  */
 const COLS = ["seq", "received", "annotator_id", "identity_commit", "invite_hash", "expert_field", "expert_career",
-              "pid", "arxiv_id", "poses", "how", "where", "statement", "confidence", "comment", "updated",
-              "page_version", "prev_hash"];
+              "pid", "arxiv_id", "poses", "how", "where", "statement", "solves", "solved_problem", "confidence", "comment",
+              "updated", "page_version", "prev_hash"];
+const C = Object.fromEntries(COLS.map((c, i) => [c, i]));  // column index by name
 const LOG_HEAD = COLS.concat(["row_hash", "canonical"]);
 const GENESIS = "0".repeat(64);
 const MAX_RECORDS = 200, MAX_LEN = 4000, MAX_RECEIPTS_PER_DAY = 60;
@@ -104,7 +105,8 @@ function doPost(e) {
       const seq = h.seq + 1;
       const fields = [String(seq), now, id, commit, invite ? sha_(invite) : "", clip_(ex.field), clip_(ex.career),
                       r.pid, clip_(r.arxiv_id), clip_(r.poses), clip_(r.how), clip_(r.where), clip_(r.statement),
-                      clip_(r.confidence), clip_(r.comment), clip_(r.updated), clip_(d.page_version), h.hash];
+                      clip_(r.solves), clip_(r.solved_problem), clip_(r.confidence), clip_(r.comment), clip_(r.updated),
+                      clip_(d.page_version), h.hash];
       const canonical = JSON.stringify(fields);
       const hash = sha_(canonical);
       rows.push(fields.concat([hash, canonical]));
@@ -120,7 +122,7 @@ function doPost(e) {
 }
 
 function receipt_(id, d) {
-  const v = log_().getDataRange().getValues().slice(1).filter(r => r[2] === id);
+  const v = log_().getDataRange().getValues().slice(1).filter(r => r[C.annotator_id] === id);
   const idr = ids_().getDataRange().getValues().find(r => r[0] === id);
   const email = idr ? String(idr[2]) : "";
   if (!v.length || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return out_({ ok: false, error: "no answers or no e-mail on record" });
@@ -130,10 +132,10 @@ function receipt_(id, d) {
   props.setProperty("RECEIPTS_" + day, String(used + 1));
   const h = head_();
   const latest = {};
-  v.forEach(r => { latest[r[7]] = r; });
+  v.forEach(r => { latest[r[C.pid]] = r; });
   const lines = Object.keys(latest).sort().map(p => {
     const r = latest[p];
-    return `${p}  arXiv:${r[8]}  answer=${r[9] || "-"}  confidence=${r[13] || "-"}  seq=${r[0]}  row_hash=${r[COLS.length]}`;
+    return `${p}  arXiv:${r[C.arxiv_id]}  poses=${r[C.poses] || "-"}  solves=${r[C.solves] || "-"}  confidence=${r[C.confidence] || "-"}  seq=${r[C.seq]}  row_hash=${r[COLS.length]}`;
   });
   const body = [
     "Receipt for your classifications (open problems in mathematics papers).", "",

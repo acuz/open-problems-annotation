@@ -86,6 +86,16 @@ mark { background: var(--mark); color: inherit; }
 textarea { width: 100%; min-height: 64px; resize: vertical; }
 .nav { display: flex; gap: 8px; }
 .saved { color: var(--muted); font-size: 12px; min-height: 1em; }
+/* text converted from the authors' LaTeX (pandoc): paragraphs, theorem-like blocks, headings, lists, displayed maths */
+.text.rich { white-space: normal; }
+.rich p { margin: 0 0 0.85em; }
+.rich h4 { font-family: var(--serif); font-size: 17px; margin: 1.3em 0 0.5em; }
+.rich > div, .rich div:not(.math) { margin: 0.9em 0; padding: 0.4em 0 0.1em 0.9em; border-left: 3px solid var(--rule); }
+.rich ul, .rich ol { margin: 0 0 0.85em; padding-left: 1.4em; }
+.rich li { margin: 0.2em 0; }
+.rich .math.display { display: block; overflow-x: auto; overflow-y: hidden; padding: 0.2em 0; }
+.rich .katex-display { margin: 0.4em 0; }
+.rich blockquote { margin: 0.6em 0 0.6em 1em; color: var(--muted); }
 #receiptBody th, #receiptBody td { padding: 2px 14px 2px 0; text-align: left; white-space: nowrap; font-variant-numeric: tabular-nums; }
 #receiptBody th { color: var(--muted); font-weight: 500; }
 dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); color: var(--ink); max-width: 560px; }
@@ -109,7 +119,7 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
 <section class="start" id="start">
   <h2>Classifying open problems in mathematics papers</h2>
   <div class="card">
-    <p>Thank you for helping. We study how often mathematics papers pose open problems, and how well simple, transparent rules can find them. You will see the title, abstract and introduction of 120 arXiv papers. For each, tell us whether the paper itself poses or explicitly flags an open mathematical problem.</p>
+    <p>Thank you for helping. We study how often mathematics papers pose open problems, and how well simple, transparent rules can find them. You will see the title, abstract and introduction of 120 arXiv papers. For each, tell us whether the paper itself poses or explicitly flags an open mathematical problem, and whether it solves (or makes progress on) a problem posed before.</p>
     <p id="storageNote">Your answers are saved as you go. You can stop and come back later on the same computer and browser; to move to another computer, press <b>Download a copy</b> and use <b>Import</b> there.</p>
     <p>About 2–4 minutes per paper. You do not need to finish all papers: every answer is useful.</p>
   </div>
@@ -122,6 +132,8 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
       <li><b>list open problems</b>: a survey or section that presents open problems.</li>
     </ol>
     <p>Answer <b>no</b> when the paper only proves, disproves or makes progress on someone else's problem without saying what remains open; when a conjecture appears only as background; or when a “Conjecture” statement is someone else's conjecture that the paper then proves. Use <b>unsure</b> freely.</p>
+    <h3>Second question: does the paper solve a known problem?</h3>
+    <p>Independently of question 1, say whether the paper <b>resolves</b> (proves or disproves) a conjecture or problem posed earlier, makes <b>partial progress</b> on one (a special case, a better bound, a weaker form), or neither. A paper that only proves someone else's conjecture is “No” to question 1 and “Resolves it” to question 2; a paper can be “Yes” to both.</p>
     <p>Keyboard: <kbd>Y</kbd> yes, <kbd>N</kbd> no, <kbd>U</kbd> unsure, <kbd>→</kbd> or <kbd>J</kbd> next, <kbd>←</kbd> or <kbd>K</kbd> previous (not while typing). Use your browser's <kbd>Ctrl</kbd>+<kbd>F</kbd> to search the text; the box in the sidebar finds papers that contain a word.</p>
   </div>
   <div class="card">
@@ -163,7 +175,7 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
       </div>
     </div>
     <div class="q" id="q2box">
-      <span class="qt">2. How? (tick all that apply)</span>
+      <span class="qt">1a. How? (tick all that apply)</span>
       <div class="checks">
         <label><input type="checkbox" value="own"> Poses its own conjecture or question</label>
         <label><input type="checkbox" value="flags_open"> Says a known problem is still open</label>
@@ -171,7 +183,7 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
       </div>
     </div>
     <div class="q" id="q3box">
-      <span class="qt">3. Where did you see it?</span>
+      <span class="qt">1b. Where did you see it?</span>
       <div class="choice" id="q3">
         <button type="button" class="plain" data-v="abstract">Abstract</button>
         <button type="button" class="plain" data-v="introduction">Introduction</button>
@@ -179,11 +191,24 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
       </div>
     </div>
     <div class="q" id="q4box">
-      <span class="qt">4. The problem, in a few words</span>
+      <span class="qt">1c. The open problem, in a few words</span>
       <textarea id="q4" placeholder="optional"></textarea>
     </div>
     <div class="q">
-      <span class="qt">5. How confident are you?</span>
+      <span class="qt">2. Does the paper prove, disprove or make progress on a conjecture or problem posed before (by others or by the same authors)?</span>
+      <div class="choice" id="q7">
+        <button type="button" class="yes" data-v="full">Resolves it</button>
+        <button type="button" class="plain" data-v="partial">Partial progress</button>
+        <button type="button" class="no" data-v="no">No</button>
+        <button type="button" class="unsure" data-v="unsure">Unsure</button>
+      </div>
+    </div>
+    <div class="q" id="q8box">
+      <span class="qt">2a. Which problem, in a few words</span>
+      <textarea id="q8" placeholder="optional, e.g. “Erdős–Hajnal conjecture for P5-free graphs”"></textarea>
+    </div>
+    <div class="q">
+      <span class="qt">3. How confident are you?</span>
       <div class="choice" id="q5">
         <button type="button" class="plain" data-v="low">Low</button>
         <button type="button" class="plain" data-v="medium">Medium</button>
@@ -191,7 +216,7 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
       </div>
     </div>
     <div class="q">
-      <span class="qt">6. Comment</span>
+      <span class="qt">4. Comment</span>
       <span class="hint">Anything unusual: an ambiguous case, a problem stated later in the paper, a wrong abstract…</span>
       <textarea id="q6" placeholder="optional"></textarea>
     </div>
@@ -225,7 +250,11 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   // Central storage: URL of the Google Apps Script web app (apps_script.gs) that appends answers to the team's sheet.
   // Empty = answers stay in this browser only and are returned with "Download a copy".
   const ENDPOINT = "https://script.google.com/macros/s/AKfycbyi_eLVEGkEj20HdeBxw7y7RzppM0WgXQHsRQ1FS8thU-VQRqrqWUgAR7fHhpZ2DyAK/exec";
-  const PAGE_VERSION = "2026-10-12b";
+  const PAGE_VERSION = "2026-10-12c";
+  // commands common in papers but missing from KaTeX (the authors' own macros are expanded when the page is built)
+  const KATEX_MACROS = { "\\bm": "\\boldsymbol{#1}", "\\mathbbm": "\\mathbb{#1}", "\\mathds": "\\mathbb{#1}", "\\bold": "\\mathbf{#1}",
+    "\\textsl": "\\textit{#1}", "\\textsc": "\\text{#1}", "\\eqref": "(\\text{[•]})", "\\ref": "\\text{[•]}", "\\label": "",
+    "\\lefteqn": "#1", "\\ensuremath": "#1", "\\xspace": "", "\\qedhere": "", "\\mbox": "\\text{#1}" };
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
   const store = { get() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } },
                   set(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); return true; } catch (e) { return false; } } };
@@ -327,15 +356,15 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   $("receiptDownload").onclick = () => download(`receipt_${state.annotator_id.slice(0, 8)}_${new Date().toISOString().slice(0, 10)}.json`,
                                                JSON.stringify(receiptData(), null, 1), "application/json");
   function updateCount() {
-    const n = papers.filter(p => state.answers[p.pid] && state.answers[p.pid].poses).length;
+    const n = papers.filter(p => isDone(state.answers[p.pid])).length;
     $("count").textContent = `${n} / ${papers.length} classified`; $("bar").style.width = (100 * n / papers.length) + "%";
     $("who").textContent = state.expert.name ? `Classifier: ${state.expert.name}` : "";
   }
   function visible() {
     return papers.map((p, i) => ({ p, i })).filter(({ p }) => {
-      const a = state.answers[p.pid]; const done = a && a.poses;
+      const done = isDone(state.answers[p.pid]);
       if (filter === "todo" && done) return false; if (filter === "done" && !done) return false;
-      if (query) return lc(p.title + " " + p.abstract + " " + p.introduction).includes(query);
+      if (query) return lc(p.title + " " + p.search_text).includes(query);
       return true;
     });
   }
@@ -358,6 +387,14 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
       const frag = document.createDocumentFragment(); parts.forEach((s, k) => { if (k % 2) { const m = document.createElement("mark"); m.textContent = s; frag.appendChild(m); } else frag.appendChild(document.createTextNode(s)); });
       n.replaceWith(frag); });
   }
+  function isDone(a) { return !!(a && a.poses && a.solves); }
+  const CHOICES = [["q1", "poses"], ["q7", "solves"], ["q3", "where"], ["q5", "confidence"]];
+  function htmlBlock(label, html) {
+    // html was converted from the authors' LaTeX and sanitised (allow-list of tags) when papers.json was built (4.1)
+    const l = document.createElement("div"); l.className = "section-label"; l.textContent = label;
+    const d = document.createElement("div"); d.className = "text rich"; d.innerHTML = html || "<p>(not available)</p>";
+    return [l, d];
+  }
   function textBlock(label, content) {
     const l = document.createElement("div"); l.className = "section-label"; l.textContent = label;
     const d = document.createElement("div"); d.className = "text"; d.textContent = content || "(not available)";
@@ -379,23 +416,26 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
     if (p.published) pub.textContent = `Published in ${p.published.journal}${p.published.volume ? " " + p.published.volume : ""}${p.published.year ? " (" + p.published.year + ")" : ""}${p.published.doi ? " · DOI " + p.published.doi : ""}`;
     else if (p.journal_ref) pub.textContent = `Journal reference (from arXiv): ${p.journal_ref}`;
     else pub.textContent = "No peer-reviewed publication found (arXiv preprint).";
-    R.append(id, h, meta, links, pub, ...textBlock("Abstract", p.abstract), ...textBlock("Introduction", p.introduction));
-    if (window.renderMathInElement) renderMathInElement(R, { delimiters: [{ left: "$$", right: "$$", display: true }, { left: "\\[", right: "\\]", display: true }, { left: "$", right: "$", display: false }, { left: "\\(", right: "\\)", display: false }], throwOnError: false });
+    R.append(id, h, meta, links, pub, ...htmlBlock("Abstract", p.abstract_html), ...htmlBlock("Introduction", p.introduction_html));
+    if (window.renderMathInElement) renderMathInElement(R, { delimiters: [{ left: "\\[", right: "\\]", display: true }, { left: "\\(", right: "\\)", display: false }, { left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }],
+      throwOnError: false, strict: "ignore", trust: false, macros: KATEX_MACROS });
     highlight(R); R.scrollTop = 0; window.scrollTo(0, 0);
   }
   function renderForm() {
     const p = papers[state.current]; const a = state.answers[p.pid] || {};
     $("formTitle").textContent = `Classification · ${p.pid}`;
-    [["q1", "poses"], ["q3", "where"], ["q5", "confidence"]].forEach(([q, k]) => document.querySelectorAll(`#${q} button`).forEach(b => b.setAttribute("aria-pressed", String(a[k] === b.dataset.v))));
+    CHOICES.forEach(([q, k]) => document.querySelectorAll(`#${q} button`).forEach(b => b.setAttribute("aria-pressed", String(a[k] === b.dataset.v))));
     document.querySelectorAll("#q2box input").forEach(c => { c.checked = (a.how || []).includes(c.value); });
-    $("q4").value = a.statement || ""; $("q6").value = a.comment || "";
+    $("q4").value = a.statement || ""; $("q6").value = a.comment || ""; $("q8").value = a.solved_problem || "";
     const off = a.poses !== "yes"; ["q2box", "q3box", "q4box"].forEach(id => { $(id).style.opacity = off ? .45 : 1; });
+    $("q8box").style.opacity = ["full", "partial"].includes(a.solves) ? 1 : .45;
     $("prev").disabled = state.current === 0; $("next").textContent = state.current === papers.length - 1 ? "Finish" : "Next →";
   }
   function setAns(k, v) { const p = papers[state.current]; state.answers[p.pid] = Object.assign({ arxiv_id: p.arxiv_id }, state.answers[p.pid], { [k]: v, updated: new Date().toISOString() }); queue(p.pid); save(); renderForm(); renderList(); }
-  [["q1", "poses"], ["q3", "where"], ["q5", "confidence"]].forEach(([q, k]) => document.querySelectorAll(`#${q} button`).forEach(b => b.onclick = () => setAns(k, b.dataset.v)));
+  CHOICES.forEach(([q, k]) => document.querySelectorAll(`#${q} button`).forEach(b => b.onclick = () => setAns(k, b.dataset.v)));
   document.querySelectorAll("#q2box input").forEach(c => c.onchange = () => setAns("how", [...document.querySelectorAll("#q2box input:checked")].map(x => x.value)));
   $("q4").oninput = () => setAns("statement", $("q4").value); $("q6").oninput = () => setAns("comment", $("q6").value);
+  $("q8").oninput = () => setAns("solved_problem", $("q8").value);
   function go(d) { const n = state.current + d; if (n < 0) return; if (n >= papers.length) { $("guideDlg").close?.(); alertDone(); return; } state.current = n; save(); render(); }
   function alertDone() { $("saved").textContent = ENDPOINT ? "That was the last paper. Thank you — your answers have been sent to the research team." + (state.pending.length ? " A few are still being sent: keep this page open for a minute." : "")
                                                         : "That was the last paper. Thank you — please press Download a copy and send the file to the research team.";
@@ -418,9 +458,9 @@ dialog { border: 1px solid var(--rule); border-radius: 8px; background: var(--su
   $("exportBtn").onclick = () => {
     const tag = (state.expert.name || "expert").replace(/[^A-Za-z0-9]+/g, "_"); const stamp = new Date().toISOString().slice(0, 10);
     download(`open_problems_${tag}_${stamp}.json`, JSON.stringify({ expert: state.expert, annotator_id: state.annotator_id, exported: new Date().toISOString(), answers: state.answers, receipts: state.receipts }, null, 1), "application/json");
-    const cols = ["pid", "arxiv_id", "poses", "how", "where", "statement", "confidence", "comment", "updated"];
+    const cols = ["pid", "arxiv_id", "poses", "how", "where", "statement", "solves", "solved_problem", "confidence", "comment", "updated"];
     const esc = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const rows = papers.filter(p => state.answers[p.pid]).map(p => { const a = state.answers[p.pid]; return [p.pid, p.arxiv_id, a.poses, (a.how || []).join(";"), a.where, a.statement, a.confidence, a.comment, a.updated].map(esc).join(","); });
+    const rows = papers.filter(p => state.answers[p.pid]).map(p => { const a = state.answers[p.pid]; return [p.pid, p.arxiv_id, a.poses, (a.how || []).join(";"), a.where, a.statement, a.solves, a.solved_problem, a.confidence, a.comment, a.updated].map(esc).join(","); });
     download(`open_problems_${tag}_${stamp}.csv`, ["expert_name,expert_field,expert_career," + cols.join(",")].concat(rows.map(r => [state.expert.name, state.expert.field, state.expert.career].map(esc).join(",") + "," + r)).join("\n"), "text/csv");
   };
   function render() { renderList(); renderPaper(); renderForm(); updateCount(); }
